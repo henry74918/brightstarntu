@@ -17,13 +17,8 @@ import android.opengl.GLSurfaceView;
 import android.opengl.GLU;
 import android.opengl.GLUtils;
 import android.opengl.GLSurfaceView.Renderer;
-import android.view.KeyEvent;
-import android.view.MotionEvent;
-import android.view.View;
-import android.view.View.OnKeyListener;
-import android.view.View.OnTouchListener;
 
-public class BrightStarRenderer extends GLSurfaceView implements Renderer, OnKeyListener, OnTouchListener{
+public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 
 	private Context context;
 	/** Is blending enabled */
@@ -38,23 +33,24 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer, OnKey
 	 * The following values are new values, used
 	 * to navigate the world and heading
 	 */
-	private final float piover180 = 0.0174532925f;
-	private float heading;
-	private float xpos;
-	private float zpos;
-	private float yrot = 0;	 				//Y Rotation
-	private float walkbias = 0;
-	private float walkbiasangle = 0;
-	private float lookupdown = 0.0f; 
-	private float scale = 3.0f;			//scale the university
+	protected final float piover180 = 0.0174532925f;
+	protected float heading;
+	protected float xpos;
+	protected float zpos;
+	protected float yrot = 0;	 				//Y Rotation
+	protected float walkbias = 0;
+	protected float walkbiasangle = 0;
+	protected float lookupdown = 0.0f; 
+	protected float fovy = 45.0f;
+	private float coordinateScale = 20.0f;			//scale of the X,Y,Z axis
+	private float textureScale = 0.2f;				//scale of the texture size
 	private float centerX, centerY, centerZ;
 	private float upX, upY, upZ;
-	private double cenAltitude, cenAzimuth;
 	
 	/* Variables and factor for the input handler */
-	private float oldX;
-    private float oldY;
-	private final float TOUCH_SCALE = 0.3f;//0.2f;			//Proved to be good for normal rotation
+	protected float oldX;
+	protected float oldY;
+	protected final float TOUCH_SCALE = 0.3f;//0.2f;			//Proved to be good for normal rotation
 	
 	private SAORead reader;
 	private TimeCal t1;
@@ -82,12 +78,14 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer, OnKey
 	public BrightStarRenderer(Context context) {
 		super(context);
 		// TODO Auto-generated constructor stub
+		/*
 		this.setRenderer(this);
-		//Request focus
+		Request focus
 		this.requestFocus();
 		this.setFocusableInTouchMode(true);
-		
-		//
+		this.setOnKeyListener(this);
+		this.setOnTouchListener(this);
+		 */
 		this.context = context;
 		
 		//Read Data from Raw file to Memory
@@ -102,9 +100,7 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer, OnKey
         //Calculate the initial 
         eyeCenterCal();
 		eyeUpCal();
-		//Set the world as listener to this view
-		//this.setOnKeyListener(this);
-		this.setOnTouchListener(this);
+
 		
 /*for test*/
 		
@@ -168,13 +164,14 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer, OnKey
 		
 		gl.glMatrixMode(GL10.GL_PROJECTION);
 		gl.glLoadIdentity();
-		GLU.gluPerspective(gl, 45.0f, (float)width / (float)height, 0.1f, 100.0f);
+		GLU.gluPerspective(gl, fovy, (float)width / (float)height, 0.1f, 100.0f);
 		GLU.gluLookAt(gl, 0f, 0f, 0f, centerX, centerY, centerZ, upX, upY, upZ);
 		gl.glMatrixMode(GL10.GL_MODELVIEW);
 		//System.out.println("centerX:"+centerX+" centerY:"+centerY+" centerZ:"+centerZ);
 		//System.out.println("upX:"+upX+" upY:"+upY+" upZ:"+upZ);
 		//scale the hole university
-		gl.glScalef(scale, scale, scale);
+		//gl.glLoadIdentity();
+		//gl.glScalef(scale, scale, scale);
 		//
 /*star draw*/
 		//stars.draw(gl, twinkle);
@@ -187,10 +184,6 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer, OnKey
 			gl.glVertexPointer(3, GL10.GL_FLOAT, 0, vertexBuffer[i]);
 			gl.glTexCoordPointer(2, GL10.GL_FLOAT, 0, textureBuffer[i]);
 			//gl.glColorPointer(4, GL10.GL_FLOAT, 0, colorBuffer[i]);
-			//gl.glMatrixMode(GL10.GL_PROJECTION);
-			//gl.glLoadIdentity();
-			//GLU.gluLookAt(gl, 0f, 0f, 0f, 0f, (float)Math.sin(Math.toRadians((double)i*0.1)), (float)-Math.cos(Math.toRadians((double)i*0.1)), 0f, (float)Math.cos(Math.toRadians((double)i*0.1)), (float)Math.sin(Math.toRadians((double)i*0.1)));
-			//gl.glMatrixMode(GL10.GL_MODELVIEW);
 			gl.glDrawArrays(GL10.GL_TRIANGLE_STRIP, 0, 4);
 			//twinkle
 			//gl.glColor4f(textureColor[i][0], textureColor[i][1], textureColor[i][2], 0.0f);
@@ -215,7 +208,7 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer, OnKey
 		gl.glLoadIdentity(); 					//Reset The Projection Matrix
 
 		//Calculate The Aspect Ratio Of The Window
-		GLU.gluPerspective(gl, 45.0f, (float)width / (float)height, 0.1f, 100.0f);
+		GLU.gluPerspective(gl, fovy, (float)width / (float)height, 0.1f, 100.0f);
 		GLU.gluLookAt(gl, 0f, 0f, 0f, centerX, centerY, centerZ, upX, upY, upZ);
 		//GLU.gluLookAt(gl, 0f, 0f, 0f, 0f, 0f, 1f, 0f, 1f, 0f);
 		System.out.println("OOOOOOOOOOOOOOOOOOOOO");
@@ -259,127 +252,6 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer, OnKey
 	}
 	
 
-/* ***** Listener Events ***** */	
-	/**
-	 * Override the key listener to receive onKey events.
-	 *  
-	 */
-	@Override
-	public boolean onKey(View v, int keyCode, KeyEvent event) {
-		//Handle key down events
-		if(event.getAction() == KeyEvent.ACTION_DOWN) {
-			return onKeyDown(keyCode, event);
-		}
-		
-		return false;
-	}
-
-	/**
-	 * Check for the DPad presses left, right, up and down.
-	 * Walk in the according direction or rotate the "head".
-	 * 
-	 * @param keyCode - The key code
-	 * @param event - The key event
-	 * @return If the event has been handled
-	 */
-	public boolean onKeyDown(int keyCode, KeyEvent event) {
-		//
-		if(keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
-			heading += 1.0f;	
-			yrot = heading;					//Rotate The Scene To The Left
-			System.out.println("LEFT!");
-			
-		} else if(keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
-			heading -= 1.0f;
-			yrot = heading;					//Rotate The Scene To The Right
-			
-		} else if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
-			xpos -= (float)Math.sin(heading * piover180) * 0.05f;	//Move On The X-Plane Based On Player Direction
-			zpos -= (float)Math.cos(heading * piover180) * 0.05f;	//Move On The Z-Plane Based On Player Direction
-			
-			if(walkbiasangle >= 359.0f) {							//Is walkbiasangle>=359?
-				walkbiasangle = 0.0f;								//Make walkbiasangle Equal 0
-			} else {
-				walkbiasangle += 10;								//If walkbiasangle < 359 Increase It By 10
-			}
-			walkbias = (float)Math.sin(walkbiasangle * piover180) / 20.0f;	//Causes The Player To Bounce
-	
-		} else if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
-			xpos += (float)Math.sin(heading * piover180) * 0.05f;	//Move On The X-Plane Based On Player Direction
-			zpos += (float)Math.cos(heading * piover180) * 0.05f;	//Move On The Z-Plane Based On Player Direction
-			
-			if(walkbiasangle <= 1.0f) {								//Is walkbiasangle<=1?
-				walkbiasangle = 359.0f;								//Make walkbiasangle Equal 359
-			} else {
-				walkbiasangle -= 10;								//If walkbiasangle > 1 Decrease It By 10
-			}
-			walkbias = (float)Math.sin(walkbiasangle * piover180) / 20.0f;	//Causes The Player To Bounce
-		}else
-			return false;
-	
-		//We handled the event
-		return true;
-	}
-
-
-	@Override
-	public boolean onTouch(View v, MotionEvent event) {
-		// TODO Auto-generated method stub
-		boolean handled = false;
-		//System.out.println("OnTouch");
-		//
-		float x = event.getX();
-		float y = event.getY();
-		
-		//If a touch is moved on the screen
-		if(event.getAction() == MotionEvent.ACTION_MOVE) {
-			//Calculate the change
-			float dx = x - oldX;
-			float dy = y - oldY;
-			        		
-			//Up and down looking through touch
-			lookupdown += dy * TOUCH_SCALE;
-			if(lookupdown > 90.0f)
-				lookupdown = 90.0f;
-			else if(lookupdown < -90.0f)
-				lookupdown = -90.0f;
-			//Look left and right through moving on screen
-			heading += dx * TOUCH_SCALE;
-			yrot = heading;
-			
-			if(yrot > 360.0f)
-				yrot -= 360.0f;
-			else if(yrot < 0f)
-				yrot += 360.0f;
-			
-			
-			//calculate glulookat argument
-			eyeCenterCal();
-			eyeUpCal();
-			//We handled the event
-			handled = true;
-		}
-        
-        //Remember the values
-        oldX = x;
-        oldY = y;
-
-		return handled;
-	}
-	
-	/**
-	 * Override the touch screen listener.
-	 * 
-	 * React to moves and presses on the touchscreen.
-	 */
-	@Override
-	public boolean onTouchEvent(final MotionEvent event) {
-		//System.out.println("OnTouchEvent");
-		return true;
-	}
-    
-
-
 	private void init3DStar(int id, float x, float y, float z, float Mag, byte Spec) {
 		float magnitude = 0.0f;
 		short color = 0;
@@ -404,12 +276,12 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer, OnKey
 		float[] s ={ (u[1]*v[2]-u[2]*v[1])/sLen, (u[2]*v[0]-u[0]*v[2])/sLen, (u[0]*v[1]-u[1]*v[0])/sLen};
 		
 		for(int i =0;i<3;i++){
-			v[i] = v[i]*0.1f;
-			s[i] = s[i]*0.1f;
+			v[i] = v[i] * textureScale;
+			s[i] = s[i] * textureScale;
 		}
-		x = x*8f;
-		y = y*8f;
-		z = z*8f;
+		x = x * coordinateScale;
+		y = y * coordinateScale;
+		z = z * coordinateScale;
 		
 		float[] coords = {
 				//x*1f, y*1f, z*1f,
@@ -565,7 +437,7 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer, OnKey
 		bitmap.recycle();
 	}
 	
-	private void eyeCenterCal(){
+	public void eyeCenterCal(){
 		if(lookupdown == 90.0f)
 			lookupdown = 89.99f;
 		else if(lookupdown == -90.0f)
@@ -583,7 +455,7 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer, OnKey
 		centerZ = (float) CoordCal.cvRDtoZ(cenDec);
 	}
 	
-	private void eyeUpCal(){
+	public void eyeUpCal(){
 		if(lookupdown == 90.0f)
 			lookupdown = 89.99f;
 		else if(lookupdown == -90.0f)
