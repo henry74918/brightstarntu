@@ -3,6 +3,7 @@ package tw.edu.ntu;
 import javax.microedition.khronos.opengles.GL;
 
 import android.app.Activity;
+import android.content.Context;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.view.KeyEvent;
@@ -12,6 +13,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.ZoomControls;
 
 public class BrightStar extends Activity {
@@ -20,6 +22,7 @@ public class BrightStar extends Activity {
 	private GLSurfaceView mGLSurfaceView;
 	private ZoomControls mZoom;
 	private LinearLayout linearLayout;
+	private static TextView julianDay;
 	private float downX;
 	private float downY;
 	boolean mZoomVisible = false;
@@ -45,6 +48,8 @@ public class BrightStar extends Activity {
         mZoom.setOnZoomOutClickListener(mZoomOutListener);
         linearLayout.addView(mZoom);
         
+        julianDay = (TextView) findViewById(R.id.julianDay);
+        julianDay.setText("Julian Day:"+Double.toString(brightStarRenderer.t1.getJD()));
         //brightStarRenderer = new BrightStarRenderer(this);
         //setContentView(brightStarRenderer);
 
