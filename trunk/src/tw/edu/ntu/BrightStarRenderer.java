@@ -17,6 +17,7 @@ import android.opengl.GLSurfaceView;
 import android.opengl.GLU;
 import android.opengl.GLUtils;
 import android.opengl.GLSurfaceView.Renderer;
+import android.widget.TextView;
 
 public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 
@@ -34,6 +35,8 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 	 * to navigate the world and heading
 	 */
 	protected final float piover180 = 0.0174532925f;
+	protected final float TOUCH_SCALE = 0.3f;//0.2f;			//Proved to be good for normal rotation
+	
 	protected float heading;
 	protected float xpos;
 	protected float zpos;
@@ -42,19 +45,18 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 	protected float walkbiasangle = 0;
 	protected float lookupdown = 0.0f; 
 	protected float fovy = 45.0f;
+	protected float oldX;
+	protected float oldY;
+	protected TimeCal t1;
+	
 	private float coordinateScale = 20.0f;			//scale of the X,Y,Z axis
 	private float textureScale = 0.2f;				//scale of the texture size
 	private float centerX, centerY, centerZ;
 	private float upX, upY, upZ;
 	
-	/* Variables and factor for the input handler */
-	protected float oldX;
-	protected float oldY;
-	protected final float TOUCH_SCALE = 0.3f;//0.2f;			//Proved to be good for normal rotation
-	
 	private SAORead reader;
-	private TimeCal t1;
 	private Stars stars;
+	//private TextView julianDay;
 
 /*adding variables*/
 	/** raw buffers to hold the index*/
@@ -97,6 +99,7 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 		t1 = new TimeCal();
         t1.setTimeToNow();
         
+        //Set julian Day
         //Calculate the initial 
         eyeCenterCal();
 		eyeUpCal();
@@ -154,14 +157,6 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 		//gl.glRotatef(sceneroty, 0, 1.0f, 0);		//Rotate Depending On Direction Player Is Facing
 		//gl.glTranslatef(xtrans, ytrans, ztrans);	//Translate The Scene Based On Player Position
 		
-		//use glulookat to rotate our view
-		
-		//double upDec = Math.toRadians(90) + dec;
-		//double upRa = sceneroty + Math.toRadians(180);
-		//float upX = (float) CoordCal.cvRD2X(upRa, upDec);
-		//float upY = (float) CoordCal.cvRD2Y(upRa, upDec);
-		//float upZ = (float) CoordCal.cvRD2Z(upDec);
-		
 		gl.glMatrixMode(GL10.GL_PROJECTION);
 		gl.glLoadIdentity();
 		GLU.gluPerspective(gl, fovy, (float)width / (float)height, 0.1f, 100.0f);
@@ -191,6 +186,10 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 			//gl.glDrawArrays(GL10.GL_POINTS, 0, 1);
 		}
 /*for test*/
+		
+		//reset time to new
+		//BrightStar.UpdateTextView(t1);
+		//UpdateTextView();
 	}
 
 	@Override
@@ -476,4 +475,5 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 		upY = (float) CoordCal.cvRDtoY(upRa, upDec);
 		upZ = (float) CoordCal.cvRDtoZ(upDec);
 	}
+	
 }
