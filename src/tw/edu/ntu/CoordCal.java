@@ -69,6 +69,7 @@ public class CoordCal{
 	public static double cvAAtoHA(double alt_r, double azi_r, double dec_r){
 		double lat_r = Math.toRadians(lat_d);
 		double cosHa = (Math.sin(alt_r) - Math.sin(lat_r)*Math.sin(dec_r)) / (Math.cos(lat_r)*Math.cos(dec_r));
+		//System.out.println("cosHa:"+cosHa);
 		if(cosHa > 1.0f)
 			cosHa = 1.0f;
 		else if(cosHa < -1.0f)

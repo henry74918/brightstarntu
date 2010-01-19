@@ -22,7 +22,7 @@ public class BrightStar extends Activity {
 	private GLSurfaceView mGLSurfaceView;
 	private ZoomControls mZoom;
 	private LinearLayout linearLayout;
-	private static TextView julianDay;
+	private static TextView julianDay, altitude, azimuth;
 	private float downX;
 	private float downY;
 	boolean mZoomVisible = false;
@@ -49,7 +49,11 @@ public class BrightStar extends Activity {
         linearLayout.addView(mZoom);
         
         julianDay = (TextView) findViewById(R.id.julianDay);
+        altitude = (TextView) findViewById(R.id.altitude);
+        azimuth = (TextView) findViewById(R.id.azimuth);
         julianDay.setText("Julian Day:"+Double.toString(brightStarRenderer.t1.getJD()));
+        altitude.setText("altitude:"+Float.toString(brightStarRenderer.lookupdown));
+        azimuth.setText("azimuth:"+Float.toString(brightStarRenderer.yrot));
         //brightStarRenderer = new BrightStarRenderer(this);
         //setContentView(brightStarRenderer);
 
@@ -117,19 +121,21 @@ public class BrightStar extends Activity {
 		float x = event.getX();
 		float y = event.getY();
 		
-    	System.out.println("Touch under BS");
+    	//System.out.println("Touch under BS");
     	
     	//chick if it is a click on screen, show or don't show the zoom button.
     	if(event.getAction() == MotionEvent.ACTION_DOWN){
     		downX = event.getX();
     		downY = event.getY();
-    		System.out.println("Up");
+    		//System.out.println("Up");
     	}
     	if(event.getAction() == MotionEvent.ACTION_UP){
     		float upX = event.getX();
     		float upY = event.getY();
-    		System.out.println("Down");
-    		if (downX == upX && downY == upY){
+    		//System.out.println("Down");
+    		float diffX = Math.abs(downX - upX);
+    		float diffY = Math.abs(downY - upY);
+    		if (diffX <= 3f && diffY <= 3f){
     			if(mZoomVisible){
     				mZoomVisible = false;
     				mZoom.setVisibility(View.INVISIBLE);
@@ -138,6 +144,9 @@ public class BrightStar extends Activity {
     				mZoomVisible = true;
     				mZoom.setVisibility(View.VISIBLE);
     			}
+    			System.out.println("upX:"+upX+" upY:"+upY);
+    			//is windows Y coordinate ?
+    			brightStarRenderer.selectObject(upX, brightStarRenderer.width - upY);
     		}
     	}
     
@@ -147,25 +156,34 @@ public class BrightStar extends Activity {
 			//Calculate the change
 			float dx = x - brightStarRenderer.oldX;
 			float dy = y - brightStarRenderer.oldY;
-			        		
-			//Up and down looking through touch
-			brightStarRenderer.lookupdown += dy * brightStarRenderer.TOUCH_SCALE;
-			if(brightStarRenderer.lookupdown > 90.0f)
-				brightStarRenderer.lookupdown = 90.0f;
-			else if(brightStarRenderer.lookupdown < -90.0f)
-				brightStarRenderer.lookupdown = -90.0f;
-			//Look left and right through moving on screen
-			brightStarRenderer.heading += dx * brightStarRenderer.TOUCH_SCALE;
-			brightStarRenderer.yrot = brightStarRenderer.heading;
 			
-			if(brightStarRenderer.yrot > 360.0f)
-				brightStarRenderer.yrot -= 360.0f;
-			else if(brightStarRenderer.yrot < 0f)
-				brightStarRenderer.yrot += 360.0f;			
-			
-			//calculate glulookat argument
-			brightStarRenderer.eyeCenterCal();
-			brightStarRenderer.eyeUpCal();
+			if(Math.abs(dx) >= 2f || Math.abs(dy) >= 2f){
+				//Up and down looking through touch
+				brightStarRenderer.lookupdown += dy * brightStarRenderer.TOUCH_SCALE;
+				if(brightStarRenderer.lookupdown >= 90.0f)
+					brightStarRenderer.lookupdown = 89.9f;
+				else if(brightStarRenderer.lookupdown <= -90.0f)
+					brightStarRenderer.lookupdown = -89.9f;
+				
+				//Look left and right through moving on screen
+				brightStarRenderer.heading += dx * brightStarRenderer.TOUCH_SCALE;
+				brightStarRenderer.yrot = brightStarRenderer.heading;
+				while(brightStarRenderer.yrot >= 360.0f){
+					brightStarRenderer.yrot -= 360.0f;
+				}
+				while(brightStarRenderer.yrot < 0f){
+					brightStarRenderer.yrot += 360.0f;	
+				}
+				
+				//System.out.println("updown:"+brightStarRenderer.lookupdown+" yrot:"+brightStarRenderer.yrot);
+				//calculate glulookat argument
+				brightStarRenderer.eyeCenterCal();
+				brightStarRenderer.eyeUpCal();
+				
+				//set new altitude and azimuth text
+				altitude.setText("altitude:"+Float.toString(brightStarRenderer.lookupdown));
+		        azimuth.setText("azimuth:"+Float.toString(brightStarRenderer.yrot));
+			}
 		}
         
         //Remember the values
@@ -179,16 +197,16 @@ public class BrightStar extends Activity {
 	OnClickListener mZoomInListener = new OnClickListener() {
 		public void onClick(View v) {
 			if(brightStarRenderer.fovy > 5)
-				brightStarRenderer.fovy -= 5;
-			System.out.println("ZoomIn");
+					brightStarRenderer.fovy -= 5;
+			//System.out.println("ZoomIn");
 		}
 	};
     
 	OnClickListener mZoomOutListener = new OnClickListener() {
 		public void onClick(View v) {
 			if(brightStarRenderer.fovy < 120)
-				brightStarRenderer.fovy += 5;
-			System.out.println("ZoomOut");
+					brightStarRenderer.fovy += 5;
+			//System.out.println("ZoomOut");
 		}
 	};
     

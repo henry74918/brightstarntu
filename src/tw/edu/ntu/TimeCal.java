@@ -37,26 +37,34 @@ public class TimeCal{
 		return LSTh;
 	}
 	
+	public double getLSTr(){
+		return cvHtoRadians(LSTh);
+	}
+	
 	//public double cvRadHA2RadRA(double radHA){
 	//	return 
 	//}
 	
-	public static double cvH2Radians(double h){
+	public static double cvHtoRadians(double h){
 		return (h / 24 * 2 * Math.PI);
 	}
 	
-	public static double cvH2Degree(double h){
+	public static double cvHtoDegree(double h){
 		return h * 15;
 	}
 	
-	public double cvRAh2HAh(double RAh){
+	public double cvRAhtoHAh(double RAh){
 		return LSTh - RAh;
 	}
 	
-	public double cvHAh2RAh(double HAh){
+	public double cvHAhtoRAh(double HAh){
 		return LSTh - HAh;
 	}
 	
+	/**
+	 * calculate the julian day
+	 * 
+	 */
 	private void calJD(){
 		int y = timeNow.year;
 		int m = timeNow.month + 1;
@@ -76,6 +84,9 @@ public class TimeCal{
 		JD = JD - gmtoffd;
 	}
 	
+	/**
+	 * calculate the  Greenwich mean sidereal time
+	 */
 	private void calGSTh(){
 		double S = JD - 2451545.0;
 		//double S = 2444351.5 - 2451545.0;
@@ -84,10 +95,18 @@ public class TimeCal{
 		GSTh = fixTo24(UTh*1.002737909 + fixTo24(T0));
 	}
 	
+	/**
+	 * calculate the Local Sidereal Time
+	 */
 	private void calLST(){
 		LSTh = fixTo24(GSTh + (longi_d / 15.0));
 	}
 	
+	/**
+	 * setting the TimeCal instance using the time in your computer.
+	 * also calculate the julian day, Greenwich mean sidereal time and local sidereal time.
+	 * 
+	 */
 	public void setTimeToNow(){
 		//now = System.currentTimeMillis();
 		//timeNow.set(now);
