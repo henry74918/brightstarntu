@@ -49,13 +49,14 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 	protected float oldY;
 	protected TimeCal t1;
 	
-	private float coordinateScale = 20.0f;			//scale of the X,Y,Z axis
-	private float textureScale = 0.2f;				//scale of the texture size
+	private float coordinateScale = 50.0f;			//scale of the X,Y,Z axis
+	private float textureScale = 2f;				//scale of the texture size
 	private float centerX, centerY, centerZ;
 	private float upX, upY, upZ;
 	
 	private SAORead reader;
 	private Stars stars;
+	private MatrixGrabber mGrabber;
 	//private TextView julianDay;
 
 /*adding variables*/
@@ -73,6 +74,7 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 	
 	/** The buffer holding the vertices */
 	private float[][] textureColor;
+	private float[] magnitude;
 	
 	private int[] textures = new int[1];
 /*adding variables*/
@@ -99,6 +101,8 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 		t1 = new TimeCal();
         t1.setTimeToNow();
         
+        magnitude = new float[nrOfStarObjects];
+        mGrabber = new MatrixGrabber();
         //Set julian Day
         //Calculate the initial 
         eyeCenterCal();
@@ -161,9 +165,11 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 		gl.glLoadIdentity();
 		GLU.gluPerspective(gl, fovy, (float)width / (float)height, 0.1f, 100.0f);
 		GLU.gluLookAt(gl, 0f, 0f, 0f, centerX, centerY, centerZ, upX, upY, upZ);
+		mGrabber.getCurrentProjection(gl);
+		
 		gl.glMatrixMode(GL10.GL_MODELVIEW);
-		//System.out.println("centerX:"+centerX+" centerY:"+centerY+" centerZ:"+centerZ);
-		//System.out.println("upX:"+upX+" upY:"+upY+" upZ:"+upZ);
+		mGrabber.getCurrentModelView(gl);
+		//System.out.println("project:"+mGrabber.mProjection);
 		//scale the hole university
 		//gl.glLoadIdentity();
 		//gl.glScalef(scale, scale, scale);
@@ -180,11 +186,11 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 			gl.glTexCoordPointer(2, GL10.GL_FLOAT, 0, textureBuffer[i]);
 			//gl.glColorPointer(4, GL10.GL_FLOAT, 0, colorBuffer[i]);
 			gl.glDrawArrays(GL10.GL_TRIANGLE_STRIP, 0, 4);
-			//twinkle
-			//gl.glColor4f(textureColor[i][0], textureColor[i][1], textureColor[i][2], 0.0f);
-			//gl.glDrawArrays(GL10.GL_TRIANGLE_STRIP, 0, 4);
-			//gl.glDrawArrays(GL10.GL_POINTS, 0, 1);
 		}
+		//twinkle
+		//gl.glColor4f(textureColor[i][0], textureColor[i][1], textureColor[i][2], 0.0f);
+		//gl.glDrawArrays(GL10.GL_TRIANGLE_STRIP, 0, 4);
+		//gl.glDrawArrays(GL10.GL_POINTS, 0, 1);
 /*for test*/
 		
 		//reset time to new
@@ -195,6 +201,7 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 	@Override
 	public void onSurfaceChanged(GL10 gl, int width, int height) {
 		// TODO Auto-generated method stub
+		//tattoo is 240*320
 		this.width = width;
 		this.height = height;
 		
@@ -209,8 +216,8 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 		//Calculate The Aspect Ratio Of The Window
 		GLU.gluPerspective(gl, fovy, (float)width / (float)height, 0.1f, 100.0f);
 		GLU.gluLookAt(gl, 0f, 0f, 0f, centerX, centerY, centerZ, upX, upY, upZ);
+		mGrabber.getCurrentProjection(gl);
 		//GLU.gluLookAt(gl, 0f, 0f, 0f, 0f, 0f, 1f, 0f, 1f, 0f);
-		System.out.println("OOOOOOOOOOOOOOOOOOOOO");
 		gl.glMatrixMode(GL10.GL_MODELVIEW); 	//Select The Modelview Matrix
 		gl.glLoadIdentity(); 					//Reset The Modelview Matrix
 	}
@@ -251,21 +258,16 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 	}
 	
 
-	private void init3DStar(int id, float x, float y, float z, float Mag, byte Spec) {
-		float magnitude = 0.0f;
+	private void init3DStar(int id, float x, float y, float z, float magnitude, byte Spec) {
+
 		short color = 0;
+		float magScale;
+		//decide the magnitude of a star
+		magnitude += 2.6f;
+		magScale = 1f-((magnitude - 1f)/10f);
+		//set alpha to a star
+		this.magnitude[id] = magScale;
 		
-		if (Mag>=3 && Mag<4) {
-			magnitude = 0.004f;
-		} else if (Mag>=2 && Mag<3){
-			magnitude = 0.006f;			
-		} else if (Mag>=1 && Mag<2){
-			magnitude = 0.008f;
-		} else if (Mag>=0 && Mag<1){
-			magnitude = 0.01f;
-		} else {
-			magnitude = 0.015f;
-		}
 		float uLen = (float) Math.sqrt(x*x+y*y+z*z);
 		float[] u = {x/uLen, y/uLen, z/uLen};
 		float vLen = (float) Math.sqrt(1+1+((-x-y)/z)*((-x-y)/z));
@@ -275,8 +277,8 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 		float[] s ={ (u[1]*v[2]-u[2]*v[1])/sLen, (u[2]*v[0]-u[0]*v[2])/sLen, (u[0]*v[1]-u[1]*v[0])/sLen};
 		
 		for(int i =0;i<3;i++){
-			v[i] = v[i] * textureScale;
-			s[i] = s[i] * textureScale;
+			v[i] = v[i] * textureScale * magScale;
+			s[i] = s[i] * textureScale * magScale;
 		}
 		x = x * coordinateScale;
 		y = y * coordinateScale;
@@ -436,44 +438,61 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 		bitmap.recycle();
 	}
 	
+	/**
+	 * calculate where eyes are looking for
+	 * 
+	 */
 	public void eyeCenterCal(){
-		if(lookupdown == 90.0f)
-			lookupdown = 89.99f;
-		else if(lookupdown == -90.0f)
-			lookupdown = -89.99f;
 		
-		System.out.println("Alt:"+lookupdown+" Azi:"+yrot);
 		double cenAltitude = Math.toRadians(lookupdown);
 		double cenAzimuth = Math.toRadians(yrot);
-		double lstr = TimeCal.cvH2Radians(t1.getLSTh());
+		// lstr = TimeCal.cvHtoRadians(t1.getLSTh());
 		
 		double cenDec = CoordCal.cvAAtoDec(cenAltitude, cenAzimuth);
-		double cenRa = CoordCal.cvAAtoRA(cenAltitude, cenAzimuth, cenDec, lstr);
+		double cenRa = CoordCal.cvAAtoRA(cenAltitude, cenAzimuth, cenDec, t1.getLSTr());
+		//System.out.println("cenDec:"+Math.toDegrees(cenDec)+" cenRa:"+Math.toDegrees(cenRa));
 		centerX = (float) CoordCal.cvRDtoX(cenRa, cenDec);
 		centerY = (float) CoordCal.cvRDtoY(cenRa, cenDec);
 		centerZ = (float) CoordCal.cvRDtoZ(cenDec);
+		//System.out.println("cX:"+centerX+" cY:"+centerY+" cZ:"+centerZ);
 	}
 	
 	public void eyeUpCal(){
-		if(lookupdown == 90.0f)
-			lookupdown = 89.99f;
-		else if(lookupdown == -90.0f)
-			lookupdown = -89.99f;
 		
-		double upAltitude = Math.toRadians(90 + lookupdown);
-		double upAzimuth = Math.toRadians(yrot + 180);
-		double lstr = TimeCal.cvH2Radians(t1.getLSTh());
+		float upAlt;
+		if(lookupdown >= 0)
+			upAlt = 90f - lookupdown;
+		else
+			upAlt = 90f + lookupdown;
 		
-		if(upAzimuth > Math.toRadians(2*Math.PI))
-			upAzimuth -= 2*Math.PI;
+		float upAzi = yrot + 180;
+			if (upAzi >= 360f)
+				upAzi -= 360f;
+		
+		//System.out.println("upAlt:"+upAlt);
+		double upAltitude = Math.toRadians(upAlt);
+		double upAzimuth = Math.toRadians(upAzi);
+		//double lstr = TimeCal.cvHtoRadians(t1.getLSTh());
+		
+		//if(upAzimuth > Math.toRadians(2*Math.PI))
+		//	upAzimuth -= 2*Math.PI;
 		
 		double upDec = CoordCal.cvAAtoDec(upAltitude, upAzimuth);
-		//System.out.println("upAltitide:"+upAltitude+" upAzimuth:"+upAzimuth+" lstr:"+lstr);
-		double upRa = CoordCal.cvAAtoRA(upAltitude, upAzimuth, upDec, lstr);
-		//System.out.println("upRa:"+upRa+" upDec:"+upDec);
+		//System.out.println("upAltitide:"+upAltitude+" upAzimuth:"+upAzimuth+" lstr:"+t1.getLSTr());
+		double upRa = CoordCal.cvAAtoRA(upAltitude, upAzimuth, upDec, t1.getLSTr());
+		//System.out.println("upDec:"+Math.toDegrees(upDec)+" upRa:"+Math.toDegrees(upRa));
 		upX = (float) CoordCal.cvRDtoX(upRa, upDec);
 		upY = (float) CoordCal.cvRDtoY(upRa, upDec);
 		upZ = (float) CoordCal.cvRDtoZ(upDec);
+		//System.out.println("uX:"+upX+" uY:"+upY+" uZ:"+upZ);
+	}
+	
+	public void selectObject(float winX, float winY){
+		int[] view = {0,0, width, height}; 
+		float[] obj = new float[3];
+		int result;
+		result = Glu.gluUnProject(winX, winY, 0f, mGrabber.mModelView, 0, mGrabber.mProjection, 0, view, 0, obj,0);
+		System.out.println("objX:"+obj[0]+" objY:"+obj[1]+" obyZ:"+obj[2]);
 	}
 	
 }
