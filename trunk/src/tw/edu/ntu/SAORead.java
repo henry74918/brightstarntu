@@ -52,14 +52,14 @@ public class SAORead {
 				SAO[i] = new SAOData();
 				SAO[i].setData(starID, ra, dec, spectral, magnitude);
 				//SAO Data information
-				System.out.println("Index:" + i);
-				System.out.println("ID:" + SAO[i].getStarID());
-				System.out.println("RA:" + SAO[i].getRa());
-				System.out.println("DEC:" + SAO[i].getDec());
+				//System.out.println("Index:" + i);
+				//System.out.println("ID:" + SAO[i].getStarID());
+				//System.out.println("RA:" + SAO[i].getRa());
+				//System.out.println("DEC:" + SAO[i].getDec());
 				String value = new String(SAO[i].getSpectral());
-				System.out.println("Spe:" + value);
-				System.out.println("Mag:" + SAO[i].getMagnitude());
-				System.out.println();
+				//System.out.println("Spe:" + value);
+				//System.out.println("Mag:" + SAO[i].getMagnitude());
+				//System.out.println();
 			} 
 
 		} catch (EOFException eof) 

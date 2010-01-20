@@ -58,8 +58,8 @@ public class Stars {
 			stars[i].magnitude = (float) mag;
 			stars[i].setSpectral(spec); 
 		}
-		for(int i = 0; i < num; i++)
-			System.out.println("x:"+stars[i].x+" y:"+stars[i].y+" z:"+stars[i].z+" r:"+stars[i].r+" g:"+stars[i].g+" b:"+stars[i].b);
+		//for(int i = 0; i < num; i++)
+			//System.out.println("x:"+stars[i].x+" y:"+stars[i].y+" z:"+stars[i].z+" r:"+stars[i].r+" g:"+stars[i].g+" b:"+stars[i].b);
 	}
 	
 	/**
