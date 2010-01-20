@@ -1,17 +1,15 @@
 package tw.edu.ntu;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.Socket;
 
 import javax.microedition.khronos.opengles.GL;
-import javax.xml.parsers.DocumentBuilderFactory;
-
-import org.apache.http.HttpResponse;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.mime.MultipartEntity;
-import org.apache.http.entity.mime.content.StringBody;
-import org.apache.http.impl.client.DefaultHttpClient;
 
 import android.app.Activity;
 import android.hardware.SensorListener;
@@ -40,6 +38,9 @@ public class BrightStar extends Activity implements SensorListener{
 	private float downY;
 	boolean mZoomVisible = false;
 	private SensorManager mSm;
+	
+	boolean tcpip = false;
+	boolean sensor = true;
 	
     /** Called when the activity is first created. */
     @Override
@@ -71,47 +72,50 @@ public class BrightStar extends Activity implements SensorListener{
         //brightStarRenderer = new BrightStarRenderer(this);
         //setContentView(brightStarRenderer);
 
-        if (true)
+        // Sensor feature enabled
+        if (sensor)
 		{
 			mSm = (SensorManager) getSystemService(SENSOR_SERVICE);
 		}
-		
-        if (false)
+
+        // TCPIP feature tested and enabled
+        if (tcpip)
         {
-			HttpPost httppost = new HttpPost("http://twitpic.com/api/uploadAndPost");
-			// Add data
-			MultipartEntity reqEntity = new MultipartEntity();
+        	try {
+        	    String message = "MR23h32m00sMD01d00\'00\"";
+        	    Socket socket = new Socket("192.168.2.101", 10101);
+        	    Log.e("TCP", "C: Connecting...");
+        	    PrintWriter out = new PrintWriter( new BufferedWriter( new OutputStreamWriter(socket.getOutputStream())),true);
+        	    out.println(message);
+        	    Log.e("TCP", "C: Sending: '" + message + "'");
 
-			try {
-				//reqEntity.addPart("media", new FileBody(pic));
-				reqEntity.addPart("username", new StringBody("ysyang21"));
-				reqEntity.addPart("password", new StringBody("944U0080"));
-
-				String msg = "MR23h30m00sMD01d00\'00\"";
-				reqEntity.addPart("message", new StringBody(msg));
-				httppost.setEntity(reqEntity);
-
-				HttpResponse httpResponse = new DefaultHttpClient().execute(httppost);
-				if (httpResponse.getStatusLine().getStatusCode()==200) {
-                    String resp = httpResponse.getEntity().toString();
-                    Log.e("HTTP", resp);
-				} else {
-					
-				}
-			} catch(UnsupportedEncodingException e) {
-				e.printStackTrace();
-			} catch(ClientProtocolException e) {
-				e.printStackTrace();
-			} catch(IOException e) {
-				e.printStackTrace();
-			} catch(Exception e) {
-				e.printStackTrace();
-			} finally {
-				/* */
-			}
-		}
+        	    char[] line = new char[25];
+        	    try {
+        	    	Log.e("TCP", "1");
+        	    	BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        	        while (true) {
+        	            line = new char[25];
+        	            in.read(line, 0, 25);
+        	            if (line.length > 0) {
+        	                String msg = new String(line);
+        	                Log.e("TCP", "C: Receiving: '" + msg + "'");
+        	                break;
+        	            }
+        	        }
+        	    } catch (IOException e) {
+        	        e.printStackTrace();
+        	    }
+        	    
+        	    socket.close();
+                Log.e("TCP", "socket is closed");
+        	} catch (IOException ioe) {
+                ioe.printStackTrace();
+        	} finally {
+                /* */
+        	}
+        }
     }
-    
+
 	/**
 	 * resume 
 	 */
@@ -120,12 +124,15 @@ public class BrightStar extends Activity implements SensorListener{
 		super.onResume();
 		//brightStarRenderer.onResume();
 		mGLSurfaceView.onResume();
-        mSm.registerListener(this, 
+    	if (sensor)
+    	{
+            mSm.registerListener(this, 
                 SensorManager.SENSOR_ACCELEROMETER | 
                 SensorManager.SENSOR_MAGNETIC_FIELD | 
                 SensorManager.SENSOR_ORIENTATION
                 ,
                 SensorManager.SENSOR_DELAY_FASTEST);
+    	}
 	}
 
 	/**
@@ -140,7 +147,10 @@ public class BrightStar extends Activity implements SensorListener{
 
     @Override
     protected void onStop() {
-        mSm.unregisterListener(this);
+    	if (sensor)
+    	{
+            mSm.unregisterListener(this);
+    	}
         super.onStop();
     }
 	
@@ -278,25 +288,15 @@ public class BrightStar extends Activity implements SensorListener{
     public void onSensorChanged(int sensor, float[] values) {
         //Log.d(Integer.toString(sensor), "sensor: " + sensor + ", x: " + values[0] + ", y: " + values[1] + ", z: " + values[2]);
         synchronized (this) {
-        	//if (count++%5 != 0) return;
 
             if (sensor == SensorManager.SENSOR_ORIENTATION) {
-            	Log.d(Integer.toString(sensor), "sensor: " + sensor + ", x: " + values[0] + ", y: " + values[1] + ", z: " + values[2]);
-                //float xdiff = _sensor_x - values[0];
-                //float ydiff = _sensor_y - values[1];
-                //float zdiff = _sensor_z - values[2];
-                
-            	//float _shift_value_x = 1.0f;
-            	//float _shift_value_y = 1.0f;
-            	//float _shift_value_z = 1.0f;
-            	
-                //if (Math.abs(xdiff) > _shift_value_x)
-                //{
-                //	float rotate_y = (ydiff>0?_shift_value_x:(-_shift_value_x));
-                //   _renderer.setYAngle(_renderer.getZAngle() + ydiff/10);
-                //	//_renderer.setYAngle(_renderer.getYAngle() + rotate_y);
-                //	_sensor_y += rotate_y;
-                //}
+            	//Log.d(Integer.toString(sensor), "sensor: " + sensor + ", x: " + values[0] + ", y: " + values[1] + ", z: " + values[2]);
+            	brightStarRenderer.yrot = 360-values[0];
+            	brightStarRenderer.lookupdown = -values[1]-90;
+            	brightStarRenderer.eyeCenterCal();
+				brightStarRenderer.eyeUpCal();
+            	azimuth.setText("azimuth:"+Float.toString(brightStarRenderer.yrot));
+            	altitude.setText("altitude:"+Float.toString(brightStarRenderer.lookupdown));
             }
 
         	mGLSurfaceView.invalidate();

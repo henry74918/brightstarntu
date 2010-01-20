@@ -19,7 +19,6 @@ import android.opengl.GLU;
 import android.opengl.GLUtils;
 import android.opengl.GLSurfaceView.Renderer;
 import android.util.Log;
-import android.widget.TextView;
 
 public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 
@@ -80,13 +79,18 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 	private float[][] textureColor;
 	private float[] magnitude;
 	
-	private int[] textures = new int[1];
+	private int[] textures = new int[2];
 	
     private Random rand = new Random((long)0.1);
 
 	private int[] nrOfVertices;
+	
+	private ByteBuffer sb;
+	private FloatBuffer fb;
     /*adding variables*/
 	
+	boolean solar_sim = true;
+
 	public BrightStarRenderer(Context context) {
 		super(context);
 		// TODO Auto-generated constructor stub
@@ -129,7 +133,7 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 		nrOfVertices = new int[nrOfSolarObjects];
 		
 		//Load coordination and color for solar objects
-	    //init3DSolar(0, 0.001f, 0f, 0f, 0.2f, "Earth" );
+	    //init3DSolar(0, 5f, 0f, 0f, 1f, "Earth" );
 	    //init3DSolar(1, 0.8f, -0.7f, -0.3f, 0.1f, "Moon" );
 	    //init3DSolar(0, -0.8f, -0.6f, 0.0f, 0.1f, "Sun" );
 
@@ -196,12 +200,22 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 /*star draw*/		
 		
 /*for test*/		
+
         for (int i=0; i< nrOfSolarObjects; i++){
-        	gl.glVertexPointer(3, GL10.GL_FLOAT, 0, vertexBuffer[i]);
-            gl.glColorPointer(4, GL10.GL_FLOAT, 0, colorBuffer[i]);
-            gl.glDrawElements(GL10.GL_TRIANGLES, nrOfVertices[i], GL10.GL_UNSIGNED_SHORT, indexBuffer[i]);    
-        } 
-		
+        	if (solar_sim){
+                gl.glDisable(GL10.GL_TEXTURE_2D);
+               	gl.glVertexPointer(3, GL10.GL_FLOAT, 0, vertexBuffer[i]);
+                gl.glColorPointer(4, GL10.GL_FLOAT, 0, colorBuffer[i]);
+                gl.glDrawElements(GL10.GL_TRIANGLES, nrOfVertices[i], GL10.GL_UNSIGNED_SHORT, indexBuffer[i]); 
+        	} else {
+        		gl.glBindTexture(GL10.GL_TEXTURE_2D, textures[1]);
+                gl.glVertexPointer(3, GL10.GL_FLOAT, 0, vertexBuffer[i]);
+                gl.glTexCoordPointer(2, GL10.GL_FLOAT, 0, textureBuffer[i]);
+                gl.glTexImage2D(GL10.GL_TEXTURE_2D, 0, GL10.GL_RGBA, 922, 461, 0, GL10.GL_RGBA, GL10.GL_UNSIGNED_BYTE, fb);
+        	}
+        }
+
+		gl.glEnable(GL10.GL_TEXTURE_2D);
 		gl.glBindTexture(GL10.GL_TEXTURE_2D, textures[0]);
 		for (int i=nrOfSolarObjects; i < nrOfObjects; i++){
 			gl.glColor4f(textureColor[i][0], textureColor[i][1], textureColor[i][2], 1.0f);
@@ -250,7 +264,7 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 		// TODO Auto-generated method stub
 		//Settings
 		gl.glDisable(GL10.GL_DITHER);						//Disable dithering
-		gl.glEnable(GL10.GL_TEXTURE_2D);					//Enable Texture Mapping
+		//gl.glEnable(GL10.GL_TEXTURE_2D);					//Enable Texture Mapping
 		gl.glShadeModel(GL10.GL_SMOOTH); 					//Enable Smooth Shading
 		gl.glClearColor(0.0f, 0.0f, 0.0f, 0.5f); 			//Black Background
 		gl.glClearDepthf(1.0f); 							//Depth Buffer Setup
@@ -273,7 +287,10 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 /*create stars*/
 		
 /*for test*/
-		loadGLTexture(gl, this.context);
+		loadStarTexture(gl, this.context);
+		if (!solar_sim) {
+            loadSolarTexture(gl, this.context);
+		}
 		gl.glEnableClientState(GL10.GL_VERTEX_ARRAY);
 		//gl.glEnableClientState(GL10.GL_COLOR_ARRAY);
 		gl.glEnableClientState(GL10.GL_TEXTURE_COORD_ARRAY);
@@ -522,7 +539,7 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 	 * @param gl - The GL Context
 	 * @param context - The Activity context
 	 */
-	public void loadGLTexture(GL10 gl, Context context) {
+	public void loadStarTexture(GL10 gl, Context context) {
 		//Get the texture from the Android resource directory
 		InputStream is = context.getResources().openRawResource(R.drawable.star);
 		Bitmap bitmap = null;
@@ -554,6 +571,72 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 		//Clean up
 		bitmap.recycle();
 	}
+	
+    private void loadSolarTexture (GL10 gl, Context context) 
+    {
+		InputStream is = context.getResources().openRawResource(R.raw.earth);
+		Bitmap bitmap = null;
+		try {
+			//BitmapFactory is an Android graphics utility for images
+			bitmap = BitmapFactory.decodeStream(is);
+
+		} finally {
+			//Always clear and close
+			try {
+				is.close();
+				is = null;
+			} catch (IOException e) {
+			}
+		}
+  		int width = bitmap.getWidth();
+    	int height = bitmap.getHeight();
+
+    	Log.e("BMPonLoad", Integer.toString(width) + "x" + Integer.toString(height));
+    	
+  		sb = ByteBuffer.allocateDirect(width*height*4*4); //w*h*{RGBA}*4
+  		sb.order(ByteOrder.nativeOrder());
+  		fb = sb.asFloatBuffer();
+
+  		int color, red, green, blue, alpha;
+	
+		for( int i = 0; i < width * height; i++ ) {
+			color = bitmap.getPixel((i % width), (i / width));
+			blue = color & 0xff;
+			green = (color >> 8) & 0xff;
+			red = (color >> 16) & 0xff;
+			alpha = (color >> 24) & 0xff;
+
+			fb.put((float)red/255);
+			fb.put((float)green/255);
+			fb.put((float)blue/255);
+			fb.put((float)alpha/255);
+		}
+		
+  		fb.position(0);
+  		sb.position(0);
+  		
+  		//Generate one texture pointer...
+		gl.glGenTextures(1, textures, 0);
+
+		//...and bind it to our array
+		gl.glBindTexture(GL10.GL_TEXTURE_2D, textures[1]);
+
+		//Different possible texture parameters, e.g. GL10.GL_CLAMP_TO_EDGE
+		gl.glTexParameterf(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_WRAP_S, GL10.GL_REPEAT);
+		gl.glTexParameterf(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_WRAP_T, GL10.GL_REPEAT);
+		//Create Nearest Filtered Texture
+		gl.glTexParameterf(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MIN_FILTER, GL10.GL_LINEAR);
+		gl.glTexParameterf(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MAG_FILTER, GL10.GL_LINEAR);
+
+		gl.glTexEnvf(GL10.GL_TEXTURE_ENV, GL10.GL_TEXTURE_ENV_MODE, GL10.GL_MODULATE);
+
+		//Use the Android GLUtils to specify a two-dimensional texture image from our bitmap
+		//GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, bmp, 0);
+		gl.glTexImage2D(GL10.GL_TEXTURE_2D, 0, GL10.GL_RGBA, width, height, 0, GL10.GL_RGBA, GL10.GL_UNSIGNED_BYTE, fb);
+	
+		//Clean up
+		bitmap.recycle();
+    }
 	
 	/**
 	 * calculate where eyes are looking for

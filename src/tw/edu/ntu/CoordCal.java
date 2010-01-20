@@ -6,7 +6,7 @@ public class CoordCal{
 	//private static double longi_d = 120.0;
 	//private static double lat_d = 25.0;
 	private static double longi_d = 120.0;
-	private static double lat_d = 52.0;
+	private static double lat_d = 25.0;
 	
 	/**
 	 * Convert Hour-angel and Declination to Altitude.
