@@ -6,6 +6,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
+import java.util.Random;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -17,6 +18,7 @@ import android.opengl.GLSurfaceView;
 import android.opengl.GLU;
 import android.opengl.GLUtils;
 import android.opengl.GLSurfaceView.Renderer;
+import android.util.Log;
 import android.widget.TextView;
 
 public class BrightStarRenderer extends GLSurfaceView implements Renderer {
@@ -27,7 +29,9 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 	/** Is twinkle enabled */
 	private boolean twinkle = false;
 	
+	int nrOfSolarObjects;
 	int nrOfStarObjects;
+	int nrOfObjects;
 	int width;
 	int height;
 	/*
@@ -49,7 +53,7 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 	protected float oldY;
 	protected TimeCal t1;
 	
-	private float coordinateScale = 50.0f;			//scale of the X,Y,Z axis
+	private float coordinateScale = 100.0f;			//scale of the X,Y,Z axis
 	private float textureScale = 2f;				//scale of the texture size
 	private float centerX, centerY, centerZ;
 	private float upX, upY, upZ;
@@ -77,7 +81,11 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 	private float[] magnitude;
 	
 	private int[] textures = new int[1];
-/*adding variables*/
+	
+    private Random rand = new Random((long)0.1);
+
+	private int[] nrOfVertices;
+    /*adding variables*/
 	
 	public BrightStarRenderer(Context context) {
 		super(context);
@@ -95,33 +103,42 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 		//Read Data from Raw file to Memory
 		reader = new SAORead(this.context);
 		reader.read();
+
+		nrOfSolarObjects = 0;
 		nrOfStarObjects = reader.getNrOfStars();
+		nrOfObjects = nrOfSolarObjects + nrOfStarObjects;
 		
 		//New a time object and set time to now
 		t1 = new TimeCal();
         t1.setTimeToNow();
         
-        magnitude = new float[nrOfStarObjects];
+        magnitude = new float[nrOfObjects];
         mGrabber = new MatrixGrabber();
         //Set julian Day
         //Calculate the initial 
         eyeCenterCal();
 		eyeUpCal();
 
-		
 /*for test*/
 		
-		indexBuffer = new ShortBuffer[nrOfStarObjects];
-		vertexBuffer = new FloatBuffer[nrOfStarObjects];
-		colorBuffer = new FloatBuffer[nrOfStarObjects];
-		textureBuffer = new FloatBuffer[nrOfStarObjects];
-		textureColor = new float[nrOfStarObjects][];
-		//Load coordination and color
-		for (int i=0;i<nrOfStarObjects;i++){
-			double RA = reader.getSAO(i).getRa();
-			double Dec = reader.getSAO(i).getDec();
-			double Mag = reader.getSAO(i).getMagnitude();
-			byte Spec = reader.getSAO(i).getSpec();
+		indexBuffer = new ShortBuffer[nrOfObjects];
+		vertexBuffer = new FloatBuffer[nrOfObjects];
+		colorBuffer = new FloatBuffer[nrOfObjects];
+		textureBuffer = new FloatBuffer[nrOfObjects];
+		textureColor = new float[nrOfObjects][];
+		nrOfVertices = new int[nrOfSolarObjects];
+		
+		//Load coordination and color for solar objects
+	    //init3DSolar(0, 0.001f, 0f, 0f, 0.2f, "Earth" );
+	    //init3DSolar(1, 0.8f, -0.7f, -0.3f, 0.1f, "Moon" );
+	    //init3DSolar(0, -0.8f, -0.6f, 0.0f, 0.1f, "Sun" );
+
+	    //Load coordination and color for star objects
+		for (int i=nrOfSolarObjects;i<nrOfObjects;i++){
+			double RA = reader.getSAO(i-nrOfSolarObjects).getRa();
+			double Dec = reader.getSAO(i-nrOfSolarObjects).getDec();
+			double Mag = reader.getSAO(i-nrOfSolarObjects).getMagnitude();
+			byte Spec = reader.getSAO(i-nrOfSolarObjects).getSpec();
 			
 			init3DStar(i, (float)Math.cos(RA)*(float)Math.cos(Dec),
 						(float)Math.sin(RA)*(float)Math.cos(Dec),
@@ -179,8 +196,14 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 /*star draw*/		
 		
 /*for test*/		
+        for (int i=0; i< nrOfSolarObjects; i++){
+        	gl.glVertexPointer(3, GL10.GL_FLOAT, 0, vertexBuffer[i]);
+            gl.glColorPointer(4, GL10.GL_FLOAT, 0, colorBuffer[i]);
+            gl.glDrawElements(GL10.GL_TRIANGLES, nrOfVertices[i], GL10.GL_UNSIGNED_SHORT, indexBuffer[i]);    
+        } 
+		
 		gl.glBindTexture(GL10.GL_TEXTURE_2D, textures[0]);
-		for (int i=0; i < nrOfStarObjects; i++){
+		for (int i=nrOfSolarObjects; i < nrOfObjects; i++){
 			gl.glColor4f(textureColor[i][0], textureColor[i][1], textureColor[i][2], 1.0f);
 			gl.glVertexPointer(3, GL10.GL_FLOAT, 0, vertexBuffer[i]);
 			gl.glTexCoordPointer(2, GL10.GL_FLOAT, 0, textureBuffer[i]);
@@ -257,8 +280,102 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 /*for test*/
 	}
 	
+    private void init3DSolar(int id, float x, float y, float z, float magnitude, String objectName) {
+    	//assert(id <= _nrOfObjects);
 
-	private void init3DStar(int id, float x, float y, float z, float magnitude, byte Spec) {
+    	int count=0;
+    	// Can use following two spacing to adjust the granularity of the sphere.
+    	int deltatheta = 10;
+    	int deltaphi = 10;
+
+    	int slicetheta = 360/deltatheta; 		//10-36, 20-18, 30-12
+        int slicephi = 180/deltaphi; 			//10-18, 20-9 , 30-6
+        int vertexphi = slicephi+1; 			//10-19, 20-10, 30-7
+        int trianglephi = ((slicephi-2)*2)+2; 	//10-34, 20-16, 30-10
+
+        int nCoord = slicetheta * vertexphi;	//10-36*19
+        int nCoords = slicetheta*vertexphi*3; 	//10-36*19*(x,y,z)
+        int nIndices = slicetheta*trianglephi*3;//10-36*34*(x,y,z)
+        int nColors = slicetheta*trianglephi*4; //10-36*34*(r,g,b,a)
+
+    	float[] coords = new float[nCoords]; 
+        short[] indices = new short[nIndices]; 
+        float[] colors = new float[nColors]; 
+
+        //coords
+        for( int theta = 0; theta < 360; theta+=deltatheta){ // from 0 to 2PI
+            for( int phi = 90; phi >= -90; phi-=deltaphi){ // from PI/2 to -PI/2
+            	float temp = 0;
+            	temp = (float) (StrictMath.cos((float)(theta) / 180.0f * StrictMath.PI) * StrictMath.cos((float)(phi) / 180.0f * StrictMath.PI)) * magnitude;
+            	if (StrictMath.abs(x)<0.0001f) {coords[count++] = 0;} else {coords[count++] = temp+x;}
+            	temp = (float) (StrictMath.sin((float)(theta) / 180.0f * StrictMath.PI) * StrictMath.cos((float)(phi) / 180.0f * StrictMath.PI)) * magnitude;
+            	if (StrictMath.abs(x)<0.0001f) {coords[count++] = 0;} else {coords[count++] = temp+y;}
+            	temp = (float) (StrictMath.sin((float)(phi) / 180.0f * StrictMath.PI)) * magnitude;
+            	if (StrictMath.abs(x)<0.0001f) {coords[count++] = 0;} else {coords[count++] = temp+z;}
+            }
+        }
+        Log.e("COORDS",Integer.toString(count));
+
+        //indices
+        count=0;
+        for (int i=0;i<slicetheta;i++){
+        	indices[count++] = (short)(0);
+        	indices[count++] = (short)( 1 + vertexphi*i);
+        	indices[count++] = (short)(((vertexphi+1) + vertexphi*i)%nCoord);
+        	for (int j=0;j<slicephi-2;j++) {
+        		indices[count++] = (short)( 1+j + vertexphi*i);
+        		indices[count++] = (short)( 2+j + vertexphi*i);
+        		indices[count++] = (short)(((vertexphi+2)+j + vertexphi*i)%nCoord);
+
+        		indices[count++] = (short)(((vertexphi+1)+j + vertexphi*i)%nCoord);
+        		indices[count++] = (short)( 1+j + vertexphi*i);
+        		indices[count++] = (short)(((vertexphi+2)+j + vertexphi*i)%nCoord);
+        	}
+        	indices[count++] = (short)((vertexphi-2) + vertexphi*i);
+        	indices[count++] = (short)((vertexphi-1));
+        	indices[count++] = (short)(((vertexphi*2-2) + vertexphi*i)%nCoord);
+        }
+        Log.e("INDICES",Integer.toString(count));
+        
+        //colors
+        rand.setSeed((long)0.1);
+        count=0;
+        for( int i = 0; i < colors.length; i += 4 ) {
+            colors[count++] = rand.nextFloat();
+            colors[count++] = rand.nextFloat();
+            colors[count++] = rand.nextFloat();
+            colors[count++] = (float)0x10000;
+        }
+        Log.e("COLORS",Integer.toString(count));
+        count=0;
+
+        nrOfVertices[id] = indices.length;
+
+        // float has 4 bytes
+        ByteBuffer vbb = ByteBuffer.allocateDirect(coords.length * 4);
+        vbb.order(ByteOrder.nativeOrder());
+        vertexBuffer[id] = vbb.asFloatBuffer();
+     
+        // short has 2 bytes
+        ByteBuffer ibb = ByteBuffer.allocateDirect(indices.length * 2);
+        ibb.order(ByteOrder.nativeOrder());
+        indexBuffer[id] = ibb.asShortBuffer();
+
+        // float has 4 bytes, 4 colors (RGBA) * number of vertices * 4 bytes
+        ByteBuffer cbb = ByteBuffer.allocateDirect(colors.length * 4);
+        cbb.order(ByteOrder.nativeOrder());
+        colorBuffer[id] = cbb.asFloatBuffer();
+
+        vertexBuffer[id].put(coords);
+        indexBuffer[id].put(indices);
+        colorBuffer[id].put(colors);
+     
+        vertexBuffer[id].position(0);
+        indexBuffer[id].position(0);
+        colorBuffer[id].position(0);
+    }
+
+    private void init3DStar(int id, float x, float y, float z, float magnitude, byte Spec) {
 
 		short color = 0;
 		float magScale;
