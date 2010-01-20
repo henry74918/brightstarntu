@@ -1,12 +1,24 @@
 package tw.edu.ntu;
 
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+
 import javax.microedition.khronos.opengles.GL;
+import javax.xml.parsers.DocumentBuilderFactory;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.mime.MultipartEntity;
+import org.apache.http.entity.mime.content.StringBody;
+import org.apache.http.impl.client.DefaultHttpClient;
 
 import android.app.Activity;
-import android.content.Context;
+import android.hardware.SensorListener;
+import android.hardware.SensorManager;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
-import android.view.KeyEvent;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -16,7 +28,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.ZoomControls;
 
-public class BrightStar extends Activity {
+
+public class BrightStar extends Activity implements SensorListener{
 	
 	private BrightStarRenderer brightStarRenderer;
 	private GLSurfaceView mGLSurfaceView;
@@ -26,6 +39,7 @@ public class BrightStar extends Activity {
 	private float downX;
 	private float downY;
 	boolean mZoomVisible = false;
+	private SensorManager mSm;
 	
     /** Called when the activity is first created. */
     @Override
@@ -57,6 +71,45 @@ public class BrightStar extends Activity {
         //brightStarRenderer = new BrightStarRenderer(this);
         //setContentView(brightStarRenderer);
 
+        if (true)
+		{
+			mSm = (SensorManager) getSystemService(SENSOR_SERVICE);
+		}
+		
+        if (false)
+        {
+			HttpPost httppost = new HttpPost("http://twitpic.com/api/uploadAndPost");
+			// Add data
+			MultipartEntity reqEntity = new MultipartEntity();
+
+			try {
+				//reqEntity.addPart("media", new FileBody(pic));
+				reqEntity.addPart("username", new StringBody("ysyang21"));
+				reqEntity.addPart("password", new StringBody("944U0080"));
+
+				String msg = "MR23h30m00sMD01d00\'00\"";
+				reqEntity.addPart("message", new StringBody(msg));
+				httppost.setEntity(reqEntity);
+
+				HttpResponse httpResponse = new DefaultHttpClient().execute(httppost);
+				if (httpResponse.getStatusLine().getStatusCode()==200) {
+                    String resp = httpResponse.getEntity().toString();
+                    Log.e("HTTP", resp);
+				} else {
+					
+				}
+			} catch(UnsupportedEncodingException e) {
+				e.printStackTrace();
+			} catch(ClientProtocolException e) {
+				e.printStackTrace();
+			} catch(IOException e) {
+				e.printStackTrace();
+			} catch(Exception e) {
+				e.printStackTrace();
+			} finally {
+				/* */
+			}
+		}
     }
     
 	/**
@@ -67,6 +120,12 @@ public class BrightStar extends Activity {
 		super.onResume();
 		//brightStarRenderer.onResume();
 		mGLSurfaceView.onResume();
+        mSm.registerListener(this, 
+                SensorManager.SENSOR_ACCELEROMETER | 
+                SensorManager.SENSOR_MAGNETIC_FIELD | 
+                SensorManager.SENSOR_ORIENTATION
+                ,
+                SensorManager.SENSOR_DELAY_FASTEST);
 	}
 
 	/**
@@ -78,6 +137,12 @@ public class BrightStar extends Activity {
 		//brightStarRenderer.onPause();
 		mGLSurfaceView.onPause();
 	}
+
+    @Override
+    protected void onStop() {
+        mSm.unregisterListener(this);
+        super.onStop();
+    }
 	
     /**
      * Invoked during init to give the Activity a chance to set up its Menu.
@@ -209,6 +274,39 @@ public class BrightStar extends Activity {
 			//System.out.println("ZoomOut");
 		}
 	};
+	
+    public void onSensorChanged(int sensor, float[] values) {
+        //Log.d(Integer.toString(sensor), "sensor: " + sensor + ", x: " + values[0] + ", y: " + values[1] + ", z: " + values[2]);
+        synchronized (this) {
+        	//if (count++%5 != 0) return;
+
+            if (sensor == SensorManager.SENSOR_ORIENTATION) {
+            	Log.d(Integer.toString(sensor), "sensor: " + sensor + ", x: " + values[0] + ", y: " + values[1] + ", z: " + values[2]);
+                //float xdiff = _sensor_x - values[0];
+                //float ydiff = _sensor_y - values[1];
+                //float zdiff = _sensor_z - values[2];
+                
+            	//float _shift_value_x = 1.0f;
+            	//float _shift_value_y = 1.0f;
+            	//float _shift_value_z = 1.0f;
+            	
+                //if (Math.abs(xdiff) > _shift_value_x)
+                //{
+                //	float rotate_y = (ydiff>0?_shift_value_x:(-_shift_value_x));
+                //   _renderer.setYAngle(_renderer.getZAngle() + ydiff/10);
+                //	//_renderer.setYAngle(_renderer.getYAngle() + rotate_y);
+                //	_sensor_y += rotate_y;
+                //}
+            }
+
+        	mGLSurfaceView.invalidate();
+        }
+    }
+
+    public void onAccuracyChanged(int sensor, int accuracy) {
+        // TODO Auto-generated method stub
+        
+    }
     
 ////////////////////////////////////////////////////////////////////////
 	/**
