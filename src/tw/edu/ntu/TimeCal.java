@@ -14,8 +14,7 @@ public class TimeCal{
 	private double GSTh;
 	//private double HAh;
 	private double LSTh;
-	private static final double longi_d = 120.0;
-	private static final double lat_d = 25.0;
+	public static double longi_d = 120.0;
 	//private static final double pi = 3.1416;
 
 	public double getJD(){
