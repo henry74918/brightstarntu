@@ -22,4 +22,24 @@
         xmlns:android="http://schemas.android.com/apk/res/android" 
         android:name="android.permission.WAKE_LOCK">
     </uses-permission>
+    <uses-permission 
+        xmlns:android="http://schemas.android.com/apk/res/android" 
+        android:name="android.permission.WRITE_SETTINGS">
+    </uses-permission>
+    <uses-permission 
+        xmlns:android="http://schemas.android.com/apk/res/android" 
+        android:name="android.permission.HARDWARE_TEST">
+    </uses-permission>
+    <uses-permission 
+        xmlns:android="http://schemas.android.com/apk/res/android" 
+        android:name="android.permission.ACCESS_GPS">
+    </uses-permission>
+        <uses-permission 
+        xmlns:android="http://schemas.android.com/apk/res/android" 
+        android:name="android.permission.ACCESS_COARSE_LOCATION">
+    </uses-permission>
+        <uses-permission 
+        xmlns:android="http://schemas.android.com/apk/res/android" 
+        android:name="android.permission.ACCESS_FINE_LOCATION">
+    </uses-permission>
 </manifest> 
