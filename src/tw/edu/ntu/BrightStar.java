@@ -20,6 +20,7 @@ import android.location.LocationManager;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.os.PowerManager;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -55,11 +56,13 @@ public class BrightStar extends Activity implements SensorListener{
 	private double dLatitude;
 	private double dLongitude;
 	
-	boolean ledon = false;
+	boolean ledon = true;
 	boolean tcpip = true;
 	boolean sensor = true;
 	boolean location = true;
 	boolean mTouchMove = true;
+	
+	private int mUserBrightness = 0;
 	
     /** Called when the activity is first created. */
     @Override
@@ -101,6 +104,12 @@ public class BrightStar extends Activity implements SensorListener{
                 PowerManager.SCREEN_BRIGHT_WAKE_LOCK,
                 "BackLight"
         	);
+        	try {
+        		mUserBrightness = Settings.System.getInt(getContentResolver(),
+        		                  Settings.System.SCREEN_BRIGHTNESS);
+        	} catch (Exception e) {
+        		e.printStackTrace();
+        	}
         }
         // Sensor service enabled
         if (sensor)
