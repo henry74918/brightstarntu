@@ -153,6 +153,9 @@ public class BrightStar extends Activity implements SensorListener{
             	dLatitude = mLocation.getLatitude();
             	dLongitude = mLocation.getLongitude();
             	
+            	 TimeCal.longi_d = mLocation.getLatitude();
+            	 CoordCal.lat_d = mLocation.getLongitude();
+            	
             	Log.e("GPSinit", Double.toString(mLocation.getLatitude()));
             	Log.e("GPSinit", mLocation.toString());
             }
@@ -376,16 +379,24 @@ public class BrightStar extends Activity implements SensorListener{
     			//is windows Y coordinate ?
     			brightStarRenderer.selectObject(upX, brightStarRenderer.width - upY);
     			//try to catch touch alt and azi
-    			float winX = upX - 120f;
-    			float winY = -upY + 160f;
+    			float winX = upX - brightStarRenderer.width/2f;
+    			float winY = -upY + brightStarRenderer.height/2f;
     			//System.out.println("winX:"+winX+" winY"+winY);
     			//System.out.println("fovy:"+brightStarRenderer.fovy);
-    			double azi = CoordCal.cvWinXYtoAzi(winX, winY, Math.toRadians(brightStarRenderer.lookupdown)
-    											, Math.toRadians(brightStarRenderer.azimuth), Math.toRadians(brightStarRenderer.fovy)
+    			double azi = CoordCal.cvWinXYtoAzi(-winX, winY, Math.toRadians(brightStarRenderer.lookupdown)
+    											, Math.toRadians(brightStarRenderer.yrot), Math.toRadians(brightStarRenderer.fovy)
     											, brightStarRenderer.height, brightStarRenderer.width);
     			double alt = CoordCal.cvWinXYtoAlt(winX, winY, Math.toRadians(brightStarRenderer.lookupdown)
     											, Math.toRadians(brightStarRenderer.fovy)
     											, brightStarRenderer.height, brightStarRenderer.width);
+    			
+    			double dec = CoordCal.cvAAtoDec(alt, azi);
+    			double ra = CoordCal.cvAAtoRA(alt, azi, dec, brightStarRenderer.t1.getLSTr());
+    			float touchX = (float) CoordCal.cvRDtoX(ra, dec);
+    			float touchY = (float) CoordCal.cvRDtoY(ra, dec);
+    			float touchZ = (float) CoordCal.cvRDtoZ(dec);
+    			brightStarRenderer.createCrossLine(touchX, touchY, touchZ);
+    			brightStarRenderer.mCross = true;
     			System.out.println("azi:"+Math.toDegrees(azi)+" alt:"+Math.toDegrees(alt));
     		}
     	}
@@ -396,17 +407,18 @@ public class BrightStar extends Activity implements SensorListener{
 				//Calculate the change
 				float dx = x - brightStarRenderer.oldX;
 				float dy = y - brightStarRenderer.oldY;
-				if(Math.abs(dx) >= 2f || Math.abs(dy) >= 2f){
+				if(Math.abs(dx) >= 6f || Math.abs(dy) >= 6f){
 					//Up and down looking through touch
 					brightStarRenderer.lookupdown += dy * brightStarRenderer.TOUCH_SCALE;
 					if(brightStarRenderer.lookupdown >= 90.0f)
 						brightStarRenderer.lookupdown = 89.9f;
-					else if(brightStarRenderer.lookupdown <= -90.0f)
-						brightStarRenderer.lookupdown = -89.9f;
+					else if(brightStarRenderer.lookupdown < 0.0f)
+						brightStarRenderer.lookupdown = 0f;
 					
 					//Look left and right through moving on screen
-					brightStarRenderer.heading += dx * brightStarRenderer.TOUCH_SCALE;
-					brightStarRenderer.yrot = brightStarRenderer.heading;
+					//brightStarRenderer.heading += dx * brightStarRenderer.TOUCH_SCALE;
+					//brightStarRenderer.yrot = brightStarRenderer.heading;
+					brightStarRenderer.yrot += dx * brightStarRenderer.TOUCH_SCALE;
 					while(brightStarRenderer.yrot >= 360.0f){
 						brightStarRenderer.yrot -= 360.0f;
 					}
@@ -456,12 +468,22 @@ public class BrightStar extends Activity implements SensorListener{
 	            if (sensor == SensorManager.SENSOR_ORIENTATION) {
 	            	//Log.d(Integer.toString(sensor), "sensor: " + sensor + ", x: " + values[0] + ", y: " + values[1] + ", z: " + values[2]);
 	            	//brightStarRenderer.yrot = values[0];
-	            	orientaton[0] = values[0] * filterFactor + orientaton[0] * (1f - filterFactor);
+	            	if(Math.abs(orientaton[0] - values[0]) > 300.0)
+	            		orientaton[0] = values[0];
+	            	else
+	            		orientaton[0] = values[0] * filterFactor + orientaton[0] * (1f - filterFactor);
+	            	
 	            	orientaton[1] = values[1] * filterFactor + orientaton[1] * (1f - filterFactor);
 	            	
 	            	brightStarRenderer.yrot = 360f - orientaton[0];
-	            	brightStarRenderer.azimuth = 360f - orientaton[0];
+	            	brightStarRenderer.azimuth = orientaton[0];
+	            	
 	            	brightStarRenderer.lookupdown = -orientaton[1]-90f;
+	            	if(brightStarRenderer.lookupdown >= 90.0f)
+						brightStarRenderer.lookupdown = 89.9f;
+					else if(brightStarRenderer.lookupdown < 0.0f)
+						brightStarRenderer.lookupdown = 0f;
+	            	
 	            	brightStarRenderer.eyeCenterCal();
 					brightStarRenderer.eyeUpCal();
 	            	azimuth.setText("azimuth:"+Float.toString(brightStarRenderer.azimuth));

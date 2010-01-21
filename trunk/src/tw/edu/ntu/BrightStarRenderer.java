@@ -55,6 +55,7 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 	protected boolean mGridVisible = false;
 	protected boolean mGridRDVisible = false;
 	protected boolean mMeridianVisible = false;
+	protected boolean mCross = false;
 	
 	private final int CIRCLE_DEGREE = 5;
 	private final int LINE_DEGREE = 5;
@@ -66,9 +67,10 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 	private final int NUM_OF_LINE_VERTICES = (int) ((160f/LINE_DEGREE) +1);
 	private final int NUM_OF_MERIDIAN_LINE_VERTICES = (int) ((180f/LINE_DEGREE) + 1);
 	private final float coordinateScale = 100.0f;			//scale of the X,Y,Z axis
-	private float textureScale = 2f;				//scale of the texture size
+	private float textureScale = 1f;				//scale of the texture size
 	private float centerX, centerY, centerZ;
 	private float upX, upY, upZ;
+	private float touchX, touchY, touchZ;
 	
 	private SAORead reader;
 	//private Stars stars;
@@ -96,9 +98,10 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 	private FloatBuffer[] VerticalLineBuffer;
 	private FloatBuffer[] VerticalRDLineBuffer;
 	private FloatBuffer[] MeridianLineBuffer;
+	private FloatBuffer CrossLineBuffer;
 	private float[] magnitude;
 	
-	private int[] textures = new int[2];
+	private int[] textures = new int[3];
 	
     private Random rand = new Random((long)0.1);
 
@@ -130,6 +133,7 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 		nrOfSolarObjects = 0;
 		nrOfStarObjects = reader.getNrOfStars();
 		nrOfObjects = nrOfSolarObjects + nrOfStarObjects;
+		
 		
 		//New a time object and set time to now
 		t1 = new TimeCal();
@@ -326,6 +330,20 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 			//gl.glColorPointer(4, GL10.GL_FLOAT, 0, colorBuffer[i]);
 			gl.glDrawArrays(GL10.GL_TRIANGLE_STRIP, 0, 4);
 		}
+		
+		//Draw Cross line
+		
+		if(mCross){
+			gl.glDisable(GL10.GL_TEXTURE_2D);
+			//gl.glBindTexture(GL10.GL_TEXTURE_2D, textures[1]);
+			gl.glColor4f(0.0f, 1.0f, 1.0f, 1.0f);
+			gl.glVertexPointer(3, GL10.GL_FLOAT, 0, CrossLineBuffer);
+			//gl.glTexCoordPointer(2, GL10.GL_FLOAT, 0, textureBuffer[0]);
+			gl.glDrawArrays(GL10.GL_LINES, 0, 8);
+			gl.glEnable(GL10.GL_TEXTURE_2D);
+		}
+		
+		
 		//twinkle
 		//gl.glColor4f(textureColor[i][0], textureColor[i][1], textureColor[i][2], 0.0f);
 		//gl.glDrawArrays(GL10.GL_TRIANGLE_STRIP, 0, 4);
@@ -397,6 +415,7 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 		if (!solar_sim) {
             loadSolarTexture(gl, this.context);
 		}
+        
 		gl.glEnableClientState(GL10.GL_VERTEX_ARRAY);
 		//gl.glEnableClientState(GL10.GL_COLOR_ARRAY);
 		gl.glEnableClientState(GL10.GL_TEXTURE_COORD_ARRAY);
@@ -504,7 +523,8 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 		float magScale;
 		//decide the magnitude of a star
 		magnitude += 2.6f;
-		magScale = 1f-((magnitude - 1f)/10f);
+		//magScale = 1f-((magnitude - 1f)/10f);
+		magScale = (float) Math.pow(1.4, 5.6-magnitude);
 		//set alpha to a star
 		this.magnitude[id] = magScale;
 		
@@ -1077,6 +1097,51 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 			MeridianLineBuffer[i].put(coords);
 			MeridianLineBuffer[i].position(0);
 		}
+	}
+	
+	public void createCrossLine(float x, float y, float z){
+		//calculate the point's x,y,z
+		float lineScale = 3f;
+		
+		float uLen = (float) Math.sqrt(x*x+y*y+z*z);
+		float[] u = {x/uLen, y/uLen, z/uLen};
+		float vLen = (float) Math.sqrt(1+1+((-x-y)/z)*((-x-y)/z));
+		float[] v = {1f/vLen, 1f/vLen, ((-x-y)/z)/vLen};
+		//float a = (float) (Math.pow(u[2]*v[3]-u[3]*v[2], 2.0));
+		float sLen =(float) Math.sqrt(Math.pow(u[1]*v[2]-u[2]*v[1], 2)+Math.pow(u[2]*v[0]-u[0]*v[2], 2)+Math.pow(u[0]*v[1]-u[1]*v[0], 2));
+		float[] s ={ (u[1]*v[2]-u[2]*v[1])/sLen, (u[2]*v[0]-u[0]*v[2])/sLen, (u[0]*v[1]-u[1]*v[0])/sLen};
+		
+		//float fovScale = (float) Math.tan(fovy /2.0);
+		for(int i =0;i<3;i++){
+			v[i] = v[i] * lineScale;
+			s[i] = s[i] * lineScale;
+		}
+		
+		
+		x = x * coordinateScale;
+		y = y * coordinateScale;
+		z = z * coordinateScale;
+		
+		float[] coords = {
+				//x*1f, y*1f, z*1f,
+				//x-v[0]-s[0], y-v[1]-s[1], z-v[2]-s[2],
+				//x+v[0]-s[0], y+v[1]-s[1], z+v[2]-s[2],
+				//x-v[0]+s[0], y-v[1]+s[1], z-v[2]+s[2],
+				//x+v[0]+s[0], y+v[1]+s[1], z+v[2]+s[2],
+				x-2*v[0],y-2*v[1],z-2*v[2],
+				x-1*v[0],y-1*v[1],z-1*v[2],
+				x+2*v[0],y+2*v[1],z+2*v[2],
+				x+1*v[0],y+1*v[1],z+1*v[2],
+				x-2*s[0],y-2*s[1],z-2*s[2],
+				x-1*s[0],y-1*s[1],z-1*s[2],
+				x+2*s[0],y+2*s[1],z+2*s[2],
+				x+1*s[0],y+1*s[1],z+1*s[2],
+		};
+		ByteBuffer vlb = ByteBuffer.allocateDirect(coords.length * 4);
+		vlb.order(ByteOrder.nativeOrder());
+		CrossLineBuffer = vlb.asFloatBuffer();
+		CrossLineBuffer.put(coords);
+		CrossLineBuffer.position(0);
 	}
 
 	
