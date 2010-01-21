@@ -297,7 +297,7 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 		gl.glDisable(GL10.GL_TEXTURE_2D);
 		gl.glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
         gl.glVertexPointer(3, GL10.GL_FLOAT, 0, vertexLineBuffer[2]);
-        gl.glDrawArrays(GL10.GL_LINE_STRIP, 0, 25);
+        gl.glDrawArrays(GL10.GL_LINE_STRIP, 0, 26);
 		gl.glEnable(GL10.GL_TEXTURE_2D);
 /*for test*/		
 
@@ -709,6 +709,7 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
     			{6,8,9,14,45,59,0},
     			{5,54,59,20,16,38,0},
     			{6,4,31,20,8,15,0},
+    			{6,12,31,14,12,21,0},
     			{6,2,56,9,38,48,0},
     			{5,55,43,7,24,29,0},
     			
@@ -734,9 +735,9 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
     			{4,59,4,1,43,43,0},
     	};
 
-    	float line_coords[] = new float[25*3];
+    	float line_coords[] = new float[26*3];
         int count = 0;
-    	for (int i=0;i<25;i++){
+    	for (int i=0;i<26;i++){
     		double RA = ((RD[i][0]*3600.0+
     				     RD[i][1]*60.0+
     				     RD[i][2])/86400.0)*2*StrictMath.PI;
