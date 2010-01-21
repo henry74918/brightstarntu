@@ -81,6 +81,7 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 	
 	/** raw buffers to hold the vertices*/
 	private FloatBuffer[] vertexBuffer;
+	private FloatBuffer[] vertexLineBuffer;
 
 	/** raw buffers to hold the colors*/
 	private FloatBuffer[] colorBuffer;
@@ -150,10 +151,12 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 		textureColor = new float[nrOfObjects][];
 		nrOfVertices = new int[nrOfSolarObjects];
 		
+		vertexLineBuffer = new FloatBuffer[3];
+		
 		//Load coordination and color for solar objects
-	    //init3DSolar(0, 5f, 0f, 0f, 1f, "Earth" );
-	    //init3DSolar(1, 0.8f, -0.7f, -0.3f, 0.1f, "Moon" );
-	    //init3DSolar(0, -0.8f, -0.6f, 0.0f, 0.1f, "Sun" );
+	    //init3DSolar(0, 5f, 0f, 0f, 1f, "Sun" );
+	    //init3DSolar(0, 0.8f, -0.7f, -0.3f, 0.1f, "Moon" );
+	    //init3DSolar(0, -0.8f, -0.6f, 0.0f, 0.1f, "Earth" );
 
 	    //Load coordination and color for star objects
 		for (int i=nrOfSolarObjects;i<nrOfObjects;i++){
@@ -174,6 +177,9 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
         createVerticalRDLine();
         //
         createMeridianLine();
+        initConstellation1("Cas");
+        initConstellation2("UMa");
+        initConstellation3("Ori");
 /*for test*/
 	}
 
@@ -273,7 +279,26 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 			gl.glEnable(GL10.GL_TEXTURE_2D);
 		}
 
+		//draw Cas line
+		gl.glDisable(GL10.GL_TEXTURE_2D);
+		gl.glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+        gl.glVertexPointer(3, GL10.GL_FLOAT, 0, vertexLineBuffer[0]);
+        gl.glDrawArrays(GL10.GL_LINE_STRIP, 0, 5);
+		gl.glEnable(GL10.GL_TEXTURE_2D);
 
+		//draw UMa line
+		gl.glDisable(GL10.GL_TEXTURE_2D);
+		gl.glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+        gl.glVertexPointer(3, GL10.GL_FLOAT, 0, vertexLineBuffer[1]);
+        gl.glDrawArrays(GL10.GL_LINE_STRIP, 0, 7);
+		gl.glEnable(GL10.GL_TEXTURE_2D);
+		
+		//draw UMa line
+		gl.glDisable(GL10.GL_TEXTURE_2D);
+		gl.glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+        gl.glVertexPointer(3, GL10.GL_FLOAT, 0, vertexLineBuffer[2]);
+        gl.glDrawArrays(GL10.GL_LINE_STRIP, 0, 25);
+		gl.glEnable(GL10.GL_TEXTURE_2D);
 /*for test*/		
 
         for (int i=0; i< nrOfSolarObjects; i++){
@@ -283,6 +308,7 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
                 gl.glColorPointer(4, GL10.GL_FLOAT, 0, colorBuffer[i]);
                 gl.glDrawElements(GL10.GL_TRIANGLES, nrOfVertices[i], GL10.GL_UNSIGNED_SHORT, indexBuffer[i]); 
         	} else {
+        		gl.glEnable(GL10.GL_TEXTURE_2D);
         		gl.glBindTexture(GL10.GL_TEXTURE_2D, textures[1]);
                 gl.glVertexPointer(3, GL10.GL_FLOAT, 0, vertexBuffer[i]);
                 gl.glTexCoordPointer(2, GL10.GL_FLOAT, 0, textureBuffer[i]);
@@ -612,6 +638,127 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 		textureColor[id] = new float[4];
 		textureColor[id] = colors[color];
 	}
+
+    public void initConstellation1(String sName) {
+    	int RD[][] = {           // Cas
+    			{0,9,42,59,12,28},  // beta
+    			{0,41,55,56,35,32}, // alpha
+    			{0,57,19,60,46,15}, // gamma
+    			{1,26,28,60,17,17}, // delta
+    			{1,55,8,63,43,9}    // epsilon
+    	};
+
+    	float line_coords[] = new float[5*3];
+        int count = 0;
+    	for (int i=0;i<5;i++){
+    		double RA = ((RD[i][0]*3600.0+
+    				     RD[i][1]*60.0+
+    				     RD[i][2])/86400.0)*2*StrictMath.PI;
+    		double DE = ((RD[i][3]+
+	                     RD[i][4]/60.0+
+	                     RD[i][5]/3600.0)/180.0)*StrictMath.PI;
+    		
+    		line_coords[count++] = (float)CoordCal.cvRDtoX(RA,DE);
+    		line_coords[count++] = (float)CoordCal.cvRDtoY(RA,DE);
+    		line_coords[count++] = (float)CoordCal.cvRDtoZ(DE);
+    	};
+    	// float has 4 bytes
+		ByteBuffer vbb = ByteBuffer.allocateDirect(line_coords.length * 4);
+		vbb.order(ByteOrder.nativeOrder());
+		vertexLineBuffer[0] = vbb.asFloatBuffer();
+		vertexLineBuffer[0].put(line_coords);
+		vertexLineBuffer[0].position(0);
+    }
+ 
+    public void initConstellation2(String sName) {
+    	int RD[][] = {           // UMa
+    			{13,47,56,49,15,48},  // eta
+    			{13,24,20,54,52,24},  // zeta
+    			{12,54,28,55,54,20},  // epsilon
+    			{12,15,55,56,58,37},  // delta
+    			{11,54,21,53,38,20},  // gamma
+    			{11,2,26,56,19,42},   // beta
+    			{11,4,21,61,41,50}    //alpha
+    	};
+
+    	float line_coords[] = new float[7*3];
+        int count = 0;
+    	for (int i=0;i<7;i++){
+    		double RA = ((RD[i][0]*3600.0+
+    				     RD[i][1]*60.0+
+    				     RD[i][2])/86400.0)*2*StrictMath.PI;
+    		double DE = ((RD[i][3]+
+	                     RD[i][4]/60.0+
+	                     RD[i][5]/3600.0)/180.0)*StrictMath.PI;
+    		
+    		line_coords[count++] = (float)CoordCal.cvRDtoX(RA,DE);
+    		line_coords[count++] = (float)CoordCal.cvRDtoY(RA,DE);
+    		line_coords[count++] = (float)CoordCal.cvRDtoZ(DE);
+    	};
+    	// float has 4 bytes
+		ByteBuffer vbb = ByteBuffer.allocateDirect(line_coords.length * 4);
+		vbb.order(ByteOrder.nativeOrder());
+		vertexLineBuffer[1] = vbb.asFloatBuffer();
+		vertexLineBuffer[1].put(line_coords);
+		vertexLineBuffer[1].position(0);
+    }
+
+    public void initConstellation3(String sName) {
+    	int RD[][] = {           // Ori
+    			{6,12,31,14,12,21,0},
+    			{6,8,9,14,45,59,0},
+    			{5,54,59,20,16,38,0},
+    			{6,4,31,20,8,15,0},
+    			{6,2,56,9,38,48,0},
+    			{5,55,43,7,24,29,0},
+    			
+    			{5,41,16,1,56,17,1},
+    			{5,48,14,9,40,0,1},
+    			{5,15,1,8,11,26,1},
+    			{5,32,31,0,17,32,1},
+    			{5,36,43,1,11,46,1},
+    			{5,41,16,1,56,17,1},
+    			{5,36,43,1,11,46,1},
+    			{5,32,31,0,17,32,1},
+    			{5,25,40,6,21,29,0},
+    			{5,35,42,9,56,24,0},
+    			{5,55,43,7,24,29,0},
+    			{5,35,42,9,56,24,0},
+    			{5,25,40,6,21,29,0},
+    			
+    			{4,55,27,10,9,58,0},
+    			{4,51,10,8,55,0,0},
+    			{4,50,23,6,58,41,0},
+    			{4,51,45,5,37,18,0},
+    			{4,54,47,2,27,23,0},
+    			{4,59,4,1,43,43,0},
+    	};
+
+    	float line_coords[] = new float[25*3];
+        int count = 0;
+    	for (int i=0;i<25;i++){
+    		double RA = ((RD[i][0]*3600.0+
+    				     RD[i][1]*60.0+
+    				     RD[i][2])/86400.0)*2*StrictMath.PI;
+    		double DE = ((RD[i][3]+
+                         RD[i][4]/60.0+
+                         RD[i][5]/3600.0)/180.0)*StrictMath.PI;
+
+    		if (RD[i][6]==1) {
+    			DE = -DE;
+    		}
+    		
+    		line_coords[count++] = (float)CoordCal.cvRDtoX(RA,DE);
+    		line_coords[count++] = (float)CoordCal.cvRDtoY(RA,DE);
+    		line_coords[count++] = (float)CoordCal.cvRDtoZ(DE);
+    	};
+    	// float has 4 bytes
+		ByteBuffer vbb = ByteBuffer.allocateDirect(line_coords.length * 4);
+		vbb.order(ByteOrder.nativeOrder());
+		vertexLineBuffer[2] = vbb.asFloatBuffer();
+		vertexLineBuffer[2].put(line_coords);
+		vertexLineBuffer[2].position(0);
+    }
 
 	/**
 	 * Load the textures
