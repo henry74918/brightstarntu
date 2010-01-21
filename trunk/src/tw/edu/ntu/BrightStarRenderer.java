@@ -44,21 +44,34 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 	protected float xpos;
 	protected float zpos;
 	protected float yrot = 0;	 				//Y Rotation
+	protected float azimuth;
 	protected float walkbias = 0;
 	protected float walkbiasangle = 0;
 	protected float lookupdown = 0.0f; 
-	protected float fovy = 45.0f;
+	protected float fovy = 90.0f;
 	protected float oldX;
 	protected float oldY;
 	protected TimeCal t1;
+	protected boolean mGridVisible = false;
+	protected boolean mGridRDVisible = false;
+	protected boolean mMeridianVisible = false;
 	
-	private float coordinateScale = 100.0f;			//scale of the X,Y,Z axis
+	private final int CIRCLE_DEGREE = 5;
+	private final int LINE_DEGREE = 5;
+	private final int HORIZON_CIRCLE_INTERVAL = 10;
+	private final int VERTICAL_LINE_INTERVAL = 15;
+	private final int NUM_OF_HORIZON_CIRCLES = (int) ((180f/HORIZON_CIRCLE_INTERVAL) - 1);
+	private final int NUM_OF_VERTICAL_LINES = (int) (360f / VERTICAL_LINE_INTERVAL);
+	private final int NUM_OF_CIRCLE_VERTICES = (int) (360f/CIRCLE_DEGREE);
+	private final int NUM_OF_LINE_VERTICES = (int) ((160f/LINE_DEGREE) +1);
+	private final int NUM_OF_MERIDIAN_LINE_VERTICES = (int) ((180f/LINE_DEGREE) + 1);
+	private final float coordinateScale = 100.0f;			//scale of the X,Y,Z axis
 	private float textureScale = 2f;				//scale of the texture size
 	private float centerX, centerY, centerZ;
 	private float upX, upY, upZ;
 	
 	private SAORead reader;
-	private Stars stars;
+	//private Stars stars;
 	private MatrixGrabber mGrabber;
 	//private TextView julianDay;
 
@@ -77,6 +90,11 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 	
 	/** The buffer holding the vertices */
 	private float[][] textureColor;
+	private FloatBuffer[] HorizonLineBuffer;
+	private FloatBuffer[] HorizonRDLineBuffer;
+	private FloatBuffer[] VerticalLineBuffer;
+	private FloatBuffer[] VerticalRDLineBuffer;
+	private FloatBuffer[] MeridianLineBuffer;
 	private float[] magnitude;
 	
 	private int[] textures = new int[2];
@@ -148,7 +166,14 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 						(float)Math.sin(RA)*(float)Math.cos(Dec),
 						(float)Math.sin(Dec), (float)Mag/100, Spec);
         }
-        
+        //load GRID into memory
+		createHorizonLine();
+        createVerticalLine();
+        //load GRID RD into memory
+        createHorizonRDLine();
+        createVerticalRDLine();
+        //
+        createMeridianLine();
 /*for test*/
 	}
 
@@ -195,10 +220,60 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 		//gl.glLoadIdentity();
 		//gl.glScalef(scale, scale, scale);
 		//
+
 /*star draw*/
 		//stars.draw(gl, twinkle);
 /*star draw*/		
 		
+		//draw Grid line
+		if(mGridVisible){
+			gl.glDisable(GL10.GL_TEXTURE_2D);
+			gl.glColor4f(1.0f, 0.0f, 0.0f, 0.3f);
+			for(int i = 0; i < NUM_OF_HORIZON_CIRCLES;i++){
+				if(i == (NUM_OF_HORIZON_CIRCLES-1)/2 ){
+					gl.glColor4f(0.0f, 1.0f, 0.0f, 0.3f);
+					gl.glVertexPointer(3, GL10.GL_FLOAT, 0, HorizonLineBuffer[i]);
+					gl.glDrawArrays(GL10.GL_LINE_LOOP, 0, NUM_OF_CIRCLE_VERTICES);
+					gl.glColor4f(1.0f, 0.0f, 0.0f, 0.3f);
+				}
+				else{
+					gl.glVertexPointer(3, GL10.GL_FLOAT, 0, HorizonLineBuffer[i]);
+					gl.glDrawArrays(GL10.GL_LINE_LOOP, 0, NUM_OF_CIRCLE_VERTICES);
+				}
+			}
+			for(int i = 0; i < NUM_OF_VERTICAL_LINES;i++){
+				gl.glVertexPointer(3, GL10.GL_FLOAT, 0, VerticalLineBuffer[i]);
+				gl.glDrawArrays(GL10.GL_LINE_STRIP, 0, NUM_OF_LINE_VERTICES);
+			}
+			gl.glEnable(GL10.GL_TEXTURE_2D);
+		}
+		//draw Grid RD line
+		if(mGridRDVisible){
+			gl.glDisable(GL10.GL_TEXTURE_2D);
+			gl.glColor4f(0.0f, 0.0f, 1.0f, 0.3f);
+			for(int i = 0; i < NUM_OF_HORIZON_CIRCLES;i++){
+				gl.glVertexPointer(3, GL10.GL_FLOAT, 0, HorizonRDLineBuffer[i]);
+				gl.glDrawArrays(GL10.GL_LINE_LOOP, 0, NUM_OF_CIRCLE_VERTICES);
+			}
+			for(int i = 0; i < NUM_OF_VERTICAL_LINES;i++){
+				gl.glVertexPointer(3, GL10.GL_FLOAT, 0, VerticalRDLineBuffer[i]);
+				gl.glDrawArrays(GL10.GL_LINE_STRIP, 0, NUM_OF_LINE_VERTICES);
+			}
+			gl.glEnable(GL10.GL_TEXTURE_2D);
+		}
+		
+		//draw Meridian line
+		if(mMeridianVisible){
+			gl.glDisable(GL10.GL_TEXTURE_2D);
+			gl.glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+			for(int i = 0; i < 2;i++){
+				gl.glVertexPointer(3, GL10.GL_FLOAT, 0, MeridianLineBuffer[i]);
+				gl.glDrawArrays(GL10.GL_LINE_STRIP, 0, NUM_OF_MERIDIAN_LINE_VERTICES);
+			}
+			gl.glEnable(GL10.GL_TEXTURE_2D);
+		}
+
+
 /*for test*/		
 
         for (int i=0; i< nrOfSolarObjects; i++){
@@ -216,6 +291,7 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
         }
 
 		gl.glEnable(GL10.GL_TEXTURE_2D);
+
 		gl.glBindTexture(GL10.GL_TEXTURE_2D, textures[0]);
 		for (int i=nrOfSolarObjects; i < nrOfObjects; i++){
 			gl.glColor4f(textureColor[i][0], textureColor[i][1], textureColor[i][2], 1.0f);
@@ -271,6 +347,10 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 		//gl.glDepthFunc(GL10.GL_LEQUAL); 					//The Type Of Depth Testing To Do
 		//Really Nice Perspective Calculations
 		gl.glHint(GL10.GL_PERSPECTIVE_CORRECTION_HINT, GL10.GL_NICEST); //or change to fastest
+		//line option
+		gl.glEnable(GL10.GL_LINE_SMOOTH);
+		gl.glHint(GL10.GL_LINE_SMOOTH_HINT, GL10.GL_NICEST);
+
 		
 		//Blend
 		gl.glEnable(GL10.GL_BLEND);							//Enable blending
@@ -280,9 +360,9 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 		//loading stars
 		//create star data form SAO array
 /*create stars*/
-		stars = new Stars(nrOfStarObjects, reader.getSAOAll());
+		//stars = new Stars(nrOfStarObjects, reader.getSAOAll());
 		System.out.println("nofstars:" + nrOfStarObjects);
-		stars.loadGLTexture(gl, this.context);
+		//stars.loadGLTexture(gl, this.context);
 		//gl.glBindTexture(GL10.GL_TEXTURE_2D, textures[0]);
 /*create stars*/
 		
@@ -694,5 +774,162 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 		result = Glu.gluUnProject(winX, winY, 0f, mGrabber.mModelView, 0, mGrabber.mProjection, 0, view, 0, obj,0);
 		System.out.println("objX:"+obj[0]+" objY:"+obj[1]+" obyZ:"+obj[2]);
 	}
+
+	public void createHorizonLine(){
+		
+		double azi,alt = 90 - HORIZON_CIRCLE_INTERVAL;
+		double dec, ra;
+		
+		//create memory space for Altitude lines
+		HorizonLineBuffer = new FloatBuffer[NUM_OF_HORIZON_CIRCLES];
+		float[] coords = new float[NUM_OF_CIRCLE_VERTICES*3];
+		
+		for(int j=0; j < NUM_OF_HORIZON_CIRCLES; j++){
+			azi = 0;
+			for(int i = 0; i < NUM_OF_CIRCLE_VERTICES; i++){
+				
+				dec = CoordCal.cvAAtoDec(Math.toRadians(alt), Math.toRadians(azi));
+				ra = CoordCal.cvAAtoRA(Math.toRadians(alt), Math.toRadians(azi), dec, t1.getLSTr());
+				coords[i*3] = (float) CoordCal.cvRDtoX(ra, dec);
+				coords[i*3+1] = (float) CoordCal.cvRDtoY(ra, dec);
+				coords[i*3+2] = (float) CoordCal.cvRDtoZ(dec);
+				/*
+				coords[i*3] = (float) CoordCal.cvRDtoX(Math.toRadians(angle), Math.toRadians(circle));
+				coords[i*3+1] = (float) CoordCal.cvRDtoY(Math.toRadians(angle), Math.toRadians(circle));
+				coords[i*3+2] = (float) CoordCal.cvRDtoZ(Math.toRadians(circle));
+				*/
+				azi += CIRCLE_DEGREE;
+			}
+			alt -= HORIZON_CIRCLE_INTERVAL;
+			
+			ByteBuffer lb = ByteBuffer.allocateDirect(coords.length * 4);
+			lb.order(ByteOrder.nativeOrder());
+			HorizonLineBuffer[j] = lb.asFloatBuffer();
+			HorizonLineBuffer[j].put(coords);
+			HorizonLineBuffer[j].position(0);
+		}
+	}
+	
+	public void createVerticalLine(){
+
+		double azi=0, alt=0;
+		double ra,dec;
+		 
+		VerticalLineBuffer = new FloatBuffer[NUM_OF_VERTICAL_LINES];
+		float[] coords = new float[NUM_OF_LINE_VERTICES*3];
+		
+		for(int i=0; i < NUM_OF_VERTICAL_LINES; i++){
+			alt = 90 - HORIZON_CIRCLE_INTERVAL;
+			for(int j=0;j < NUM_OF_LINE_VERTICES;j++){				
+				dec = CoordCal.cvAAtoDec(Math.toRadians(alt), Math.toRadians(azi));
+				ra = CoordCal.cvAAtoRA(Math.toRadians(alt), Math.toRadians(azi), dec, t1.getLSTr());
+				coords[j*3] = (float) CoordCal.cvRDtoX(ra, dec);
+				coords[j*3+1] = (float) CoordCal.cvRDtoY(ra, dec);
+				coords[j*3+2] = (float) CoordCal.cvRDtoZ(dec);
+				/*
+				coords[j*3] = (float) CoordCal.cvRDtoX(Math.toRadians(azi), Math.toRadians(alt));
+				coords[j*3+1] = (float) CoordCal.cvRDtoY(Math.toRadians(azi), Math.toRadians(alt));
+				coords[j*3+2] = (float) CoordCal.cvRDtoZ(Math.toRadians(alt));
+				*/
+				alt -= LINE_DEGREE;
+			}
+			azi += VERTICAL_LINE_INTERVAL;
+			
+			ByteBuffer vlb = ByteBuffer.allocateDirect(coords.length * 4);
+			vlb.order(ByteOrder.nativeOrder());
+			VerticalLineBuffer[i] = vlb.asFloatBuffer();
+			VerticalLineBuffer[i].put(coords);
+			VerticalLineBuffer[i].position(0);
+		}
+	}
+	
+	public void createHorizonRDLine(){
+		
+		double azi,alt = 90 - HORIZON_CIRCLE_INTERVAL;
+		//double dec, ra;
+		
+		//create memory space for Altitude lines
+		HorizonRDLineBuffer = new FloatBuffer[NUM_OF_HORIZON_CIRCLES];
+		float[] coords = new float[NUM_OF_CIRCLE_VERTICES*3];
+		
+		for(int j=0; j < NUM_OF_HORIZON_CIRCLES; j++){
+			azi = 0;
+			for(int i = 0; i < NUM_OF_CIRCLE_VERTICES; i++){
+				/*
+				dec = CoordCal.cvAAtoDec(Math.toRadians(alt), Math.toRadians(azi));
+				ra = CoordCal.cvAAtoRA(Math.toRadians(alt), Math.toRadians(azi), dec, t1.getLSTr());
+				coords[i*3] = (float) CoordCal.cvRDtoX(ra, dec);
+				coords[i*3+1] = (float) CoordCal.cvRDtoY(ra, dec);
+				coords[i*3+2] = (float) CoordCal.cvRDtoZ(dec);
+				*/
+				coords[i*3] = (float) CoordCal.cvRDtoX(Math.toRadians(azi), Math.toRadians(alt));
+				coords[i*3+1] = (float) CoordCal.cvRDtoY(Math.toRadians(azi), Math.toRadians(alt));
+				coords[i*3+2] = (float) CoordCal.cvRDtoZ(Math.toRadians(alt));
+				
+				azi += CIRCLE_DEGREE;
+			}
+			alt -= HORIZON_CIRCLE_INTERVAL;
+			
+			ByteBuffer lb = ByteBuffer.allocateDirect(coords.length * 4);
+			lb.order(ByteOrder.nativeOrder());
+			HorizonRDLineBuffer[j] = lb.asFloatBuffer();
+			HorizonRDLineBuffer[j].put(coords);
+			HorizonRDLineBuffer[j].position(0);
+		}
+	}
+	
+	public void createVerticalRDLine(){
+
+		double azi=0, alt=0;
+		 
+		VerticalRDLineBuffer = new FloatBuffer[NUM_OF_VERTICAL_LINES];
+		float[] coords = new float[NUM_OF_LINE_VERTICES*3];
+		
+		for(int i=0; i < NUM_OF_VERTICAL_LINES; i++){
+			alt = 90 - HORIZON_CIRCLE_INTERVAL;
+			for(int j=0;j < NUM_OF_LINE_VERTICES;j++){				
+				coords[j*3] = (float) CoordCal.cvRDtoX(Math.toRadians(azi), Math.toRadians(alt));
+				coords[j*3+1] = (float) CoordCal.cvRDtoY(Math.toRadians(azi), Math.toRadians(alt));
+				coords[j*3+2] = (float) CoordCal.cvRDtoZ(Math.toRadians(alt));		
+				alt -= LINE_DEGREE;
+			}
+			azi += VERTICAL_LINE_INTERVAL;
+			
+			ByteBuffer vlb = ByteBuffer.allocateDirect(coords.length * 4);
+			vlb.order(ByteOrder.nativeOrder());
+			VerticalRDLineBuffer[i] = vlb.asFloatBuffer();
+			VerticalRDLineBuffer[i].put(coords);
+			VerticalRDLineBuffer[i].position(0);
+		}
+	}
+	
+	public void createMeridianLine(){
+		
+		double azi=0, alt=0;
+		double ra,dec;
+		
+		MeridianLineBuffer = new FloatBuffer[2];
+		float[] coords = new float[NUM_OF_MERIDIAN_LINE_VERTICES*3];
+		
+		for(int i=0; i < 2; i++){
+			alt = 90;
+			for(int j=0;j < NUM_OF_MERIDIAN_LINE_VERTICES;j++){				
+				dec = CoordCal.cvAAtoDec(Math.toRadians(alt), Math.toRadians(azi));
+				ra = CoordCal.cvAAtoRA(Math.toRadians(alt), Math.toRadians(azi), dec, t1.getLSTr());
+				coords[j*3] = (float) CoordCal.cvRDtoX(ra, dec);
+				coords[j*3+1] = (float) CoordCal.cvRDtoY(ra, dec);
+				coords[j*3+2] = (float) CoordCal.cvRDtoZ(dec);
+				alt -= LINE_DEGREE;
+			}
+			azi += 180.0;
+			
+			ByteBuffer vlb = ByteBuffer.allocateDirect(coords.length * 4);
+			vlb.order(ByteOrder.nativeOrder());
+			MeridianLineBuffer[i] = vlb.asFloatBuffer();
+			MeridianLineBuffer[i].put(coords);
+			MeridianLineBuffer[i].position(0);
+		}
+	}
+
 	
 }

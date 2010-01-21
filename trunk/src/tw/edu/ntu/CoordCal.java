@@ -158,15 +158,39 @@ public class CoordCal{
 		return Math.sin(dec_r);
 	}
 
-	/*
-	public static double cvAAtoX(double alt_r, double azi_r, double dec_r, double lst_r){
-		double ra = cvAAtoRA(alt_r, azi_r, dec_r, lst_r);
-		double dec = cvAAtoDec(alt_r, azi_r);
-		return cvRDtoX(ra, dec);
+	public static double cvWinXYtoAlt(double winX, double winY, double cenAlt,double fovy,double h, double w){
+		double fovx = fovy*w/h;
+		double x = winX*(2*Math.tan(fovx/2.0)/w);
+		double y = winY*(2*Math.tan(fovy/2.0)/h);
+		//x = x / 100.0;
+		//y = y / 100.0;
+		double p = Math.sqrt(Math.pow(x, 2.0)+Math.pow(y, 2.0));
+		double c = Math.atan(p);
+		double alt = Math.asin(Math.cos(c)*Math.sin(cenAlt) + (y*Math.sin(c)*Math.cos(cenAlt))/p);
+		return alt;
 	}
 	
-	public static double cvAAtoY(double alt_r, double azi_r, double dec_r, double lst_r){
-		
+	public static double cvWinXYtoAzi(double winX, double winY, double cenAlt, double cenAzi, double fovy,double h, double w){
+		double fovx = fovy*w/h;
+		double x = winX*(2*Math.tan(fovx/2.0)/w);
+		double y = winY*(2*Math.tan(fovy/2.0)/h);
+		//x = x / 100.0;
+		//y = y / 100.0;
+		double p = Math.sqrt(Math.pow(x, 2.0)+Math.pow(y, 2.0));
+		double c = Math.atan(p);
+		double azi = cenAzi + Math.atan(x*Math.sin(c)/(p*Math.cos(cenAlt)*Math.cos(c) - y*Math.sin(cenAlt)*Math.sin(c)));
+		return azi;
 	}
-	*/
+	
+	public static double cvAAtoWinX(double alt, double azi, double cenAlt, double cenAzi){
+		double cosC = Math.sin(cenAlt)*Math.sin(alt) + Math.cos(cenAlt)*Math.cos(alt)*Math.cos(azi - cenAzi);
+		double winX = Math.cos(alt)*Math.sin(azi-cenAzi) / cosC;
+		return winX;
+	}
+	
+	public static double cvAAtoWinY(double alt, double azi, double cenAlt, double cenAzi){
+		double cosC = Math.sin(cenAlt)*Math.sin(alt) + Math.cos(cenAlt)*Math.cos(alt)*Math.cos(azi - cenAzi);
+		double winY = (Math.cos(cenAlt)*Math.sin(alt) - Math.sin(cenAlt)*Math.cos(alt)*Math.cos(azi-cenAzi)) / cosC;
+		return winY;
+	}
 }
