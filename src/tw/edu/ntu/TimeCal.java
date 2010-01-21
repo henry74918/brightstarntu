@@ -2,6 +2,7 @@ package tw.edu.ntu;
 
 import android.text.format.Time;
 
+
 public class TimeCal{
 	private Time timeNow = new Time();
 	//private long now;

@@ -3,7 +3,6 @@ package tw.edu.ntu;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
@@ -36,11 +35,14 @@ public class BrightStar extends Activity implements SensorListener{
 	private static TextView julianDay, altitude, azimuth;
 	private float downX;
 	private float downY;
+	private float filterFactor = 0.3f;
+	private float[] orientaton = new float[3];
 	boolean mZoomVisible = false;
 	private SensorManager mSm;
 	
 	boolean tcpip = false;
 	boolean sensor = true;
+	boolean mTouchMove = true;
 	
     /** Called when the activity is first created. */
     @Override
@@ -164,9 +166,10 @@ public class BrightStar extends Activity implements SensorListener{
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
 
-        menu.add(0, 1, 0,"menu_start");
-        menu.add(0, 2, 0, "menu_stop");
-
+        menu.add(0, 1, 0, "AltAz Grid SW");
+        menu.add(0, 2, 0, "RaDec Grid SW");
+        menu.add(0, 3, 0, "Meridian SW");
+        menu.add(0, 4, 0, "View Mode");
         return true;
     }
     
@@ -181,9 +184,28 @@ public class BrightStar extends Activity implements SensorListener{
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
         case 1:
-        	//linearLayout.addView(mZoom);
+			if(brightStarRenderer.mGridVisible)
+        		brightStarRenderer.mGridVisible = false;
+        	else
+        		brightStarRenderer.mGridVisible = true; 	
         	return true;
         case 2:
+			if(brightStarRenderer.mGridRDVisible)
+        		brightStarRenderer.mGridRDVisible = false;
+        	else
+        		brightStarRenderer.mGridRDVisible = true;
+        	return true;
+        case 3:
+        	if(brightStarRenderer.mMeridianVisible)
+        		brightStarRenderer.mMeridianVisible = false;
+        	else
+        		brightStarRenderer.mMeridianVisible = true;
+        	return true;
+        case 4:
+        	if(mTouchMove)
+        		mTouchMove = false;
+        	else
+        		mTouchMove = true;
         	return true;
         }
 		return false;
@@ -210,7 +232,7 @@ public class BrightStar extends Activity implements SensorListener{
     		//System.out.println("Down");
     		float diffX = Math.abs(downX - upX);
     		float diffY = Math.abs(downY - upY);
-    		if (diffX <= 3f && diffY <= 3f){
+    		if (diffX <= 6f && diffY <= 6f){
     			if(mZoomVisible){
     				mZoomVisible = false;
     				mZoom.setVisibility(View.INVISIBLE);
@@ -222,42 +244,54 @@ public class BrightStar extends Activity implements SensorListener{
     			System.out.println("upX:"+upX+" upY:"+upY);
     			//is windows Y coordinate ?
     			brightStarRenderer.selectObject(upX, brightStarRenderer.width - upY);
+    			//try to catch touch alt and azi
+    			float winX = upX - 120f;
+    			float winY = -upY + 160f;
+    			//System.out.println("winX:"+winX+" winY"+winY);
+    			//System.out.println("fovy:"+brightStarRenderer.fovy);
+    			double azi = CoordCal.cvWinXYtoAzi(winX, winY, Math.toRadians(brightStarRenderer.lookupdown)
+    											, Math.toRadians(brightStarRenderer.azimuth), Math.toRadians(brightStarRenderer.fovy)
+    											, brightStarRenderer.height, brightStarRenderer.width);
+    			double alt = CoordCal.cvWinXYtoAlt(winX, winY, Math.toRadians(brightStarRenderer.lookupdown)
+    											, Math.toRadians(brightStarRenderer.fovy)
+    											, brightStarRenderer.height, brightStarRenderer.width);
+    			System.out.println("azi:"+Math.toDegrees(azi)+" alt:"+Math.toDegrees(alt));
     		}
     	}
     
-		
-		//If a touch is moved on the screen
-		if(event.getAction() == MotionEvent.ACTION_MOVE) {
-			//Calculate the change
-			float dx = x - brightStarRenderer.oldX;
-			float dy = y - brightStarRenderer.oldY;
-			
-			if(Math.abs(dx) >= 2f || Math.abs(dy) >= 2f){
-				//Up and down looking through touch
-				brightStarRenderer.lookupdown += dy * brightStarRenderer.TOUCH_SCALE;
-				if(brightStarRenderer.lookupdown >= 90.0f)
-					brightStarRenderer.lookupdown = 89.9f;
-				else if(brightStarRenderer.lookupdown <= -90.0f)
-					brightStarRenderer.lookupdown = -89.9f;
-				
-				//Look left and right through moving on screen
-				brightStarRenderer.heading += dx * brightStarRenderer.TOUCH_SCALE;
-				brightStarRenderer.yrot = brightStarRenderer.heading;
-				while(brightStarRenderer.yrot >= 360.0f){
-					brightStarRenderer.yrot -= 360.0f;
+		if(mTouchMove){
+			//If a touch is moved on the screen
+			if(event.getAction() == MotionEvent.ACTION_MOVE) {
+				//Calculate the change
+				float dx = x - brightStarRenderer.oldX;
+				float dy = y - brightStarRenderer.oldY;
+				if(Math.abs(dx) >= 2f || Math.abs(dy) >= 2f){
+					//Up and down looking through touch
+					brightStarRenderer.lookupdown += dy * brightStarRenderer.TOUCH_SCALE;
+					if(brightStarRenderer.lookupdown >= 90.0f)
+						brightStarRenderer.lookupdown = 89.9f;
+					else if(brightStarRenderer.lookupdown <= -90.0f)
+						brightStarRenderer.lookupdown = -89.9f;
+					
+					//Look left and right through moving on screen
+					brightStarRenderer.heading += dx * brightStarRenderer.TOUCH_SCALE;
+					brightStarRenderer.yrot = brightStarRenderer.heading;
+					while(brightStarRenderer.yrot >= 360.0f){
+						brightStarRenderer.yrot -= 360.0f;
+					}
+					while(brightStarRenderer.yrot < 0f){
+						brightStarRenderer.yrot += 360.0f;	
+					}
+					brightStarRenderer.azimuth = 360f - brightStarRenderer.yrot;
+					//System.out.println("updown:"+brightStarRenderer.lookupdown+" yrot:"+brightStarRenderer.yrot);
+					//calculate glulookat argument
+					brightStarRenderer.eyeCenterCal();
+					brightStarRenderer.eyeUpCal();
+					
+					//set new altitude and azimuth text
+					altitude.setText("altitude:"+Float.toString(brightStarRenderer.lookupdown));
+			        azimuth.setText("azimuth:"+Float.toString(brightStarRenderer.azimuth));
 				}
-				while(brightStarRenderer.yrot < 0f){
-					brightStarRenderer.yrot += 360.0f;	
-				}
-				
-				//System.out.println("updown:"+brightStarRenderer.lookupdown+" yrot:"+brightStarRenderer.yrot);
-				//calculate glulookat argument
-				brightStarRenderer.eyeCenterCal();
-				brightStarRenderer.eyeUpCal();
-				
-				//set new altitude and azimuth text
-				altitude.setText("altitude:"+Float.toString(brightStarRenderer.lookupdown));
-		        azimuth.setText("azimuth:"+Float.toString(brightStarRenderer.yrot));
 			}
 		}
         
@@ -273,7 +307,6 @@ public class BrightStar extends Activity implements SensorListener{
 		public void onClick(View v) {
 			if(brightStarRenderer.fovy > 5)
 					brightStarRenderer.fovy -= 5;
-			//System.out.println("ZoomIn");
 		}
 	};
     
@@ -281,7 +314,6 @@ public class BrightStar extends Activity implements SensorListener{
 		public void onClick(View v) {
 			if(brightStarRenderer.fovy < 120)
 					brightStarRenderer.fovy += 5;
-			//System.out.println("ZoomOut");
 		}
 	};
 	
@@ -289,16 +321,23 @@ public class BrightStar extends Activity implements SensorListener{
         //Log.d(Integer.toString(sensor), "sensor: " + sensor + ", x: " + values[0] + ", y: " + values[1] + ", z: " + values[2]);
         synchronized (this) {
 
-            if (sensor == SensorManager.SENSOR_ORIENTATION) {
-            	//Log.d(Integer.toString(sensor), "sensor: " + sensor + ", x: " + values[0] + ", y: " + values[1] + ", z: " + values[2]);
-            	brightStarRenderer.yrot = 360-values[0];
-            	brightStarRenderer.lookupdown = -values[1]-90;
-            	brightStarRenderer.eyeCenterCal();
-				brightStarRenderer.eyeUpCal();
-            	azimuth.setText("azimuth:"+Float.toString(brightStarRenderer.yrot));
-            	altitude.setText("altitude:"+Float.toString(brightStarRenderer.lookupdown));
-            }
-
+        	if(!mTouchMove){
+	            if (sensor == SensorManager.SENSOR_ORIENTATION) {
+	            	//Log.d(Integer.toString(sensor), "sensor: " + sensor + ", x: " + values[0] + ", y: " + values[1] + ", z: " + values[2]);
+	            	//brightStarRenderer.yrot = values[0];
+	            	orientaton[0] = values[0] * filterFactor + orientaton[0] * (1f - filterFactor);
+	            	orientaton[1] = values[1] * filterFactor + orientaton[1] * (1f - filterFactor);
+	            	
+	            	brightStarRenderer.yrot = 360f - orientaton[0];
+	            	brightStarRenderer.azimuth = 360f - orientaton[0];
+	            	brightStarRenderer.lookupdown = -orientaton[1]-90f;
+	            	brightStarRenderer.eyeCenterCal();
+					brightStarRenderer.eyeUpCal();
+	            	azimuth.setText("azimuth:"+Float.toString(brightStarRenderer.azimuth));
+	            	altitude.setText("altitude:"+Float.toString(brightStarRenderer.lookupdown));
+	            }
+        	}
+        	
         	mGLSurfaceView.invalidate();
         }
     }
