@@ -117,14 +117,16 @@ public class BrightStar extends Activity implements SensorListener{
 		{
 			mSm = (SensorManager) getSystemService(SENSOR_SERVICE);
 		}
-
+        //moveTeleScopeR(1.552107f, 0.25859f);
+        //moveTeleScopeD(5,55,43,7,24,29);
+        /*
         // TCP Connection with telescope enabled
         if (tcpip)
         {
         	try {
                 new Thread(new TeleScopeConn("MR08h00m00sMD00d00\'00\"")).start();
         	} catch (Exception e) {
-        		/* */
+                    // TODO
         	}
         }
         if (tcpip)
@@ -132,16 +134,15 @@ public class BrightStar extends Activity implements SensorListener{
         	try {
                 new Thread(new TeleScopeConn("GRD")).start();
         	} catch (Exception e) {
-
+                    // TODO
         	}
         }
-        /*
         if (tcpip)
         {
         	try {
                 new Thread(new TeleScopeConn("STOP")).start();
         	} catch (Exception e) {
-
+                    // TODO
         	}
         }
         if (tcpip)
@@ -149,7 +150,7 @@ public class BrightStar extends Activity implements SensorListener{
         	try {
                 new Thread(new TeleScopeConn("AST")).start();
         	} catch (Exception e) {
-
+                    // TODO
         	}
         }*/
         
@@ -188,6 +189,45 @@ public class BrightStar extends Activity implements SensorListener{
     // ¸g«×
     public double getLongitude() {
     	return dLongitude;
+    }
+
+    public void moveTeleScopeR(
+    		float RA, float Dec) {
+        if (tcpip)
+        {
+        	Log.e("TCP", "(RA="+Float.toString(RA)+",Dec="+Float.toString(Dec)+")");
+        	int RAh=(int)(12*RA/(StrictMath.PI));
+        	int RAm=(int)((720*RA/(StrictMath.PI))-60*RAh);
+        	int RAs=(int)((43200*RA/(StrictMath.PI))-3600*RAh-60*RAm);
+        	float t=(float)(180*Dec/(StrictMath.PI)/2);
+        	int Ded=(int)(t);
+        	int Dem=(int)(60*(t-Ded));
+        	int Des=(int)(3600*(t-Ded)-60*Dem);
+
+        	moveTeleScopeD(RAh, RAm, RAs, Ded, Dem, Des);
+        }
+    }
+    
+    public void moveTeleScopeD(
+    		int RAh, int RAm, int RAs,
+    		int Ded, int Dem, int Des) {
+        if (tcpip)
+        {
+	        String sRAh=(RAh<10?"0"+Integer.toString(RAh):Integer.toString(RAh));
+	        String sRAm=(RAm<10?"0"+Integer.toString(RAm):Integer.toString(RAm));
+	        String sRAs=(RAs<10?"0"+Integer.toString(RAs):Integer.toString(RAs));
+	        String sDed=(Ded<10?"0"+Integer.toString(Ded):Integer.toString(Ded));
+	        String sDem=(Dem<10?"0"+Integer.toString(Dem):Integer.toString(Dem));
+	        String sDes=(Des<10?"0"+Integer.toString(Des):Integer.toString(Des));
+	        String sCommand = "MR"+sRAh+"h"+sRAm+"m"+sRAs+"sMD"+sDed+"d"+sDem+"\'"+sDes+"\"";
+	        Log.e("TCP", sCommand);
+	        // "MR08h00m00sMD00d00\'00\""
+	    	try {
+	            new Thread(new TeleScopeConn(sCommand)).start();
+	    	} catch (Exception e) {
+	            // TODO
+	    	}
+        }
     }
 
         // TCPIP feature tested and enabled
