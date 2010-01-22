@@ -29,6 +29,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.ZoomControls;
 
 
@@ -162,9 +163,12 @@ public class BrightStar extends Activity implements SensorListener{
             	dLatitude = mLocation.getLatitude();
             	dLongitude = mLocation.getLongitude();
             	
-            	 TimeCal.longi_d = mLocation.getLatitude();
-            	 CoordCal.lat_d = mLocation.getLongitude();
-            	
+            	TimeCal.longi_d = mLocation.getLongitude();
+            	CoordCal.lat_d = mLocation.getLatitude();
+            	 
+            	//Showing toast message if location is set.
+            	Toast.makeText(this, "Set Location from network. Latitude:"+dLatitude+" Longigude:"+dLongitude, Toast.LENGTH_LONG).show();
+            	 
             	Log.e("GPSinit", Double.toString(mLocation.getLatitude()));
             	Log.e("GPSinit", mLocation.toString());
             }
@@ -313,6 +317,7 @@ public class BrightStar extends Activity implements SensorListener{
         menu.add(0, 2, 0, "RaDec Grid SW");
         menu.add(0, 3, 0, "Meridian SW");
         menu.add(0, 4, 0, "View Mode");
+        menu.add(0, 5, 0, "Constellation");
         return true;
     }
     
@@ -350,6 +355,11 @@ public class BrightStar extends Activity implements SensorListener{
         	else
         		mTouchMove = true;
         	return true;
+        case 5:
+        	if(brightStarRenderer.mConstellationVisible)
+        		brightStarRenderer.mConstellationVisible = false;
+        	else
+        		brightStarRenderer.mConstellationVisible = true;
         }
 		return false;
     }
@@ -384,7 +394,7 @@ public class BrightStar extends Activity implements SensorListener{
     				mZoomVisible = true;
     				mZoom.setVisibility(View.VISIBLE);
     			}
-    			System.out.println("upX:"+upX+" upY:"+upY);
+    			//System.out.println("upX:"+upX+" upY:"+upY);
     			//is windows Y coordinate ?
     			brightStarRenderer.selectObject(upX, brightStarRenderer.width - upY);
     			//try to catch touch alt and azi
@@ -482,7 +492,8 @@ public class BrightStar extends Activity implements SensorListener{
 	            	else
 	            		orientaton[0] = values[0] * filterFactor + orientaton[0] * (1f - filterFactor);
 	            	
-	            	orientaton[1] = values[1] * filterFactor + orientaton[1] * (1f - filterFactor);
+	            	if(values[1] <= 0.0)
+	            		orientaton[1] = values[1] * filterFactor + orientaton[1] * (1f - filterFactor);
 	            	
 	            	brightStarRenderer.yrot = 360f - orientaton[0];
 	            	brightStarRenderer.azimuth = orientaton[0];

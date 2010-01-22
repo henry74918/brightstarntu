@@ -56,6 +56,7 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 	protected boolean mGridRDVisible = false;
 	protected boolean mMeridianVisible = false;
 	protected boolean mCross = false;
+	protected boolean mConstellationVisible = true;
 	
 	private final int CIRCLE_DEGREE = 5;
 	private final int LINE_DEGREE = 5;
@@ -67,7 +68,7 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 	private final int NUM_OF_LINE_VERTICES = (int) ((160f/LINE_DEGREE) +1);
 	private final int NUM_OF_MERIDIAN_LINE_VERTICES = (int) ((180f/LINE_DEGREE) + 1);
 	private final float coordinateScale = 100.0f;			//scale of the X,Y,Z axis
-	private float textureScale = 1f;				//scale of the texture size
+	private float textureScale = 2.0f;				//scale of the texture size
 	private float centerX, centerY, centerZ;
 	private float upX, upY, upZ;
 	private float touchX, touchY, touchZ;
@@ -101,7 +102,7 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 	private FloatBuffer CrossLineBuffer;
 	private float[] magnitude;
 	
-	private int[] textures = new int[3];
+	private int[] textures = new int[1];
 	
     private Random rand = new Random((long)0.1);
 
@@ -282,27 +283,28 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 			}
 			gl.glEnable(GL10.GL_TEXTURE_2D);
 		}
-
-		//draw Cas line
-		gl.glDisable(GL10.GL_TEXTURE_2D);
-		gl.glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-        gl.glVertexPointer(3, GL10.GL_FLOAT, 0, vertexLineBuffer[0]);
-        gl.glDrawArrays(GL10.GL_LINE_STRIP, 0, 5);
-		gl.glEnable(GL10.GL_TEXTURE_2D);
-
-		//draw UMa line
-		gl.glDisable(GL10.GL_TEXTURE_2D);
-		gl.glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-        gl.glVertexPointer(3, GL10.GL_FLOAT, 0, vertexLineBuffer[1]);
-        gl.glDrawArrays(GL10.GL_LINE_STRIP, 0, 7);
-		gl.glEnable(GL10.GL_TEXTURE_2D);
-		
-		//draw UMa line
-		gl.glDisable(GL10.GL_TEXTURE_2D);
-		gl.glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-        gl.glVertexPointer(3, GL10.GL_FLOAT, 0, vertexLineBuffer[2]);
-        gl.glDrawArrays(GL10.GL_LINE_STRIP, 0, 26);
-		gl.glEnable(GL10.GL_TEXTURE_2D);
+		if(mConstellationVisible){
+			//draw Cas line
+			gl.glDisable(GL10.GL_TEXTURE_2D);
+			gl.glColor4f(1.0f, 1.0f, 0.0f, 0.7f);
+	        gl.glVertexPointer(3, GL10.GL_FLOAT, 0, vertexLineBuffer[0]);
+	        gl.glDrawArrays(GL10.GL_LINE_STRIP, 0, 5);
+			gl.glEnable(GL10.GL_TEXTURE_2D);
+	
+			//draw UMa line
+			gl.glDisable(GL10.GL_TEXTURE_2D);
+			gl.glColor4f(1.0f, 1.0f, 0.0f, 0.7f);
+	        gl.glVertexPointer(3, GL10.GL_FLOAT, 0, vertexLineBuffer[1]);
+	        gl.glDrawArrays(GL10.GL_LINE_STRIP, 0, 7);
+			gl.glEnable(GL10.GL_TEXTURE_2D);
+			
+			//draw UMa line
+			gl.glDisable(GL10.GL_TEXTURE_2D);
+			gl.glColor4f(1.0f, 1.0f, 0.0f, 0.7f);
+	        gl.glVertexPointer(3, GL10.GL_FLOAT, 0, vertexLineBuffer[2]);
+	        gl.glDrawArrays(GL10.GL_LINE_STRIP, 0, 26);
+			gl.glEnable(GL10.GL_TEXTURE_2D);
+		}
 /*for test*/		
 
         for (int i=0; i< nrOfSolarObjects; i++){
@@ -524,7 +526,7 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 		//decide the magnitude of a star
 		magnitude += 2.6f;
 		//magScale = 1f-((magnitude - 1f)/10f);
-		magScale = (float) Math.pow(1.4, 5.6-magnitude);
+		magScale = (float) Math.pow(1.5, 5.6-magnitude);
 		//set alpha to a star
 		this.magnitude[id] = magScale;
 		
