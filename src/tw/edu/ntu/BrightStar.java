@@ -358,6 +358,7 @@ public class BrightStar extends Activity implements SensorListener{
         menu.add(0, 3, 0, "Meridian SW");
         menu.add(0, 4, 0, "View Mode");
         menu.add(0, 5, 0, "Constellation");
+        menu.add(0, 6, 0, "GOTO");
         return true;
     }
     
@@ -400,6 +401,9 @@ public class BrightStar extends Activity implements SensorListener{
         		brightStarRenderer.mConstellationVisible = false;
         	else
         		brightStarRenderer.mConstellationVisible = true;
+        case 6:
+        	//sending ra, dec to telescope
+        	//moveTeleScopeR(ra, dec);
         }
 		return false;
     }
@@ -451,12 +455,21 @@ public class BrightStar extends Activity implements SensorListener{
     			
     			double dec = CoordCal.cvAAtoDec(alt, azi);
     			double ra = CoordCal.cvAAtoRA(alt, azi, dec, brightStarRenderer.t1.getLSTr());
+    			//this.ra = (float) ra;
+    			//this.dec = (float) dec;
     			float touchX = (float) CoordCal.cvRDtoX(ra, dec);
     			float touchY = (float) CoordCal.cvRDtoY(ra, dec);
     			float touchZ = (float) CoordCal.cvRDtoZ(dec);
+    			//
+    			double dec1 = CoordCal.cvAAtoDec(alt, 360.0-azi);
+    			double ra1 = CoordCal.cvAAtoRA(alt, 360.0-azi, dec1, brightStarRenderer.t1.getLSTr());
+    			while(ra1 > 2*Math.PI)
+    				ra1 -= 2*Math.PI;
+    			this.ra = (float) ra1;
+    			this.dec = (float) dec1;
     			brightStarRenderer.createCrossLine(touchX, touchY, touchZ);
     			brightStarRenderer.mCross = true;
-    			System.out.println("azi:"+Math.toDegrees(azi)+" alt:"+Math.toDegrees(alt));
+    			//System.out.println("azi:"+Math.toDegrees(azi)+" alt:"+Math.toDegrees(alt));
     		}
     	}
     

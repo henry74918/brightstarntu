@@ -102,7 +102,7 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 	private FloatBuffer CrossLineBuffer;
 	private float[] magnitude;
 	
-	private int[] textures = new int[3];
+	private int[] textures = new int[1];
 	
     private Random rand = new Random((long)0.1);
 
