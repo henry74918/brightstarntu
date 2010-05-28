@@ -1,9 +1,7 @@
 package tw.edu.ntu;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
@@ -27,19 +25,21 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ZoomControls;
 
 
+@SuppressWarnings("deprecation")
 public class BrightStar extends Activity implements SensorListener{
 	
 	private BrightStarRenderer brightStarRenderer;
 	private GLSurfaceView mGLSurfaceView;
 	private ZoomControls mZoom;
 	private LinearLayout linearLayout;
-	private static TextView julianDay, altitude, azimuth;
+	private static TextView julianDay, altitude, azimuth, pointAz, pointAlt;
 	private float downX;
 	private float downY;
 	private float filterFactor = 0.3f;
@@ -57,11 +57,13 @@ public class BrightStar extends Activity implements SensorListener{
 	private double dLatitude;
 	private double dLongitude;
 	
+	private double ra, dec;
+	
 	boolean ledon = true;
 	boolean tcpip = true;
 	boolean sensor = true;
 	boolean location = true;
-	boolean mTouchMove = true;
+	boolean mTouchMove = false;
 	
 	private int mUserBrightness = 0;
 	
@@ -71,6 +73,15 @@ public class BrightStar extends Activity implements SensorListener{
         super.onCreate(savedInstanceState);
         
         setContentView(R.layout.main);
+        
+        //start up image
+        Toast toast = new Toast(this);
+        ImageView view = new ImageView(this);
+        toast.setDuration(Toast.LENGTH_LONG);
+        view.setImageResource(R.drawable.brightstars);
+        toast.setView(view);
+        toast.show();
+
         mGLSurfaceView = (GLSurfaceView) findViewById(R.id.glsurfaceview);
         mGLSurfaceView.setGLWrapper(new GLSurfaceView.GLWrapper() {
                 public GL wrap(GL gl) {
@@ -89,9 +100,14 @@ public class BrightStar extends Activity implements SensorListener{
         julianDay = (TextView) findViewById(R.id.julianDay);
         altitude = (TextView) findViewById(R.id.altitude);
         azimuth = (TextView) findViewById(R.id.azimuth);
-        julianDay.setText("Julian Day:"+Double.toString(brightStarRenderer.t1.getJD()));
-        altitude.setText("altitude:"+Float.toString(brightStarRenderer.lookupdown));
-        azimuth.setText("azimuth:"+Float.toString(brightStarRenderer.yrot));
+        pointAz = (TextView) findViewById(R.id.pointAz);
+        pointAlt = (TextView) findViewById(R.id.pointAlt);
+        
+        julianDay.setText((String) this.getResources().getText(R.string.julian_day) + Double.toString(brightStarRenderer.t1.getJD()));
+        altitude.setText((String) this.getResources().getText(R.string.altitude) + Double.toString(round(brightStarRenderer.lookupdown)));
+        azimuth.setText((String) this.getResources().getText(R.string.azimuth) + Double.toString(round(brightStarRenderer.yrot)));
+        pointAz.setText((String) this.getResources().getText(R.string.point_az) + (String) this.getResources().getText(R.string.none));
+        pointAlt.setText( (String) this.getResources().getText(R.string.point_alt) + (String) this.getResources().getText(R.string.none));
         //brightStarRenderer = new BrightStarRenderer(this);
         //setContentView(brightStarRenderer);
 
@@ -192,10 +208,11 @@ public class BrightStar extends Activity implements SensorListener{
     }
 
     public void moveTeleScopeR(
-    		float RA, float Dec) {
+    		double RA, double Dec) {
         if (tcpip)
         {
-        	Log.e("TCP", "(RA="+Float.toString(RA)+",Dec="+Float.toString(Dec)+")");
+        	Log.e("TCP", "(RA="+Double.toString(RA)+",Dec="+Double.toString(Dec)+")");
+        	while (Dec<0) Dec+=2*StrictMath.PI;
         	int RAh=(int)(12*RA/(StrictMath.PI));
         	int RAm=(int)((720*RA/(StrictMath.PI))-60*RAh);
         	int RAs=(int)((43200*RA/(StrictMath.PI))-3600*RAh-60*RAm);
@@ -216,7 +233,7 @@ public class BrightStar extends Activity implements SensorListener{
 	        String sRAh=(RAh<10?"0"+Integer.toString(RAh):Integer.toString(RAh));
 	        String sRAm=(RAm<10?"0"+Integer.toString(RAm):Integer.toString(RAm));
 	        String sRAs=(RAs<10?"0"+Integer.toString(RAs):Integer.toString(RAs));
-	        String sDed=(Ded<10?"0"+Integer.toString(Ded):Integer.toString(Ded));
+	        String sDed=(Ded<10?"00"+Integer.toString(Ded):(Ded<100?"0"+Integer.toString(Ded):(Integer.toString(Ded))));
 	        String sDem=(Dem<10?"0"+Integer.toString(Dem):Integer.toString(Dem));
 	        String sDes=(Des<10?"0"+Integer.toString(Des):Integer.toString(Des));
 	        String sCommand = "MR"+sRAh+"h"+sRAm+"m"+sRAs+"sMD"+sDed+"d"+sDem+"\'"+sDes+"\"";
@@ -245,7 +262,7 @@ public class BrightStar extends Activity implements SensorListener{
         	    PrintWriter out = new PrintWriter( new BufferedWriter( new OutputStreamWriter(socket.getOutputStream())),true);
         	    out.println(message);
         	    Log.e("TCP", "C: Sending: '" + message + "'");
-
+/*
         	    char[] line = new char[25];
         	    try {
         	    	Log.e("TCP", "1");
@@ -256,15 +273,17 @@ public class BrightStar extends Activity implements SensorListener{
         	            if (line.length > 0) {
         	                String msg = new String(line);
         	                Log.e("TCP", "C: Receiving: '" + msg + "'");
+        	                socket.close();
+        	                Log.e("TCP", "socket is closed");
         	                break;
         	            }
         	        }
         	    } catch (IOException e) {
         	        e.printStackTrace();
         	    }
-        	    
+*/        	    
         	    socket.close();
-                Log.e("TCP", "socket is closed");
+                Log.e("TCP2h", "socket is closed");
         	} catch (IOException ioe) {
                 ioe.printStackTrace();
         	} finally {
@@ -353,12 +372,12 @@ public class BrightStar extends Activity implements SensorListener{
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
 
-        menu.add(0, 1, 0, "AltAz Grid SW");
-        menu.add(0, 2, 0, "RaDec Grid SW");
-        menu.add(0, 3, 0, "Meridian SW");
-        menu.add(0, 4, 0, "View Mode");
-        menu.add(0, 5, 0, "Constellation");
-        menu.add(0, 6, 0, "GOTO");
+        menu.add(0, 1, 0, R.string.menu_1);
+        menu.add(0, 2, 0, R.string.menu_2);
+        menu.add(0, 3, 0, R.string.menu_3);
+        menu.add(0, 4, 0, R.string.menu_4);
+        menu.add(0, 5, 0, R.string.menu_5);
+        menu.add(0, 6, 0, R.string.menu_6);
         return true;
     }
     
@@ -403,7 +422,7 @@ public class BrightStar extends Activity implements SensorListener{
         		brightStarRenderer.mConstellationVisible = true;
         case 6:
         	//sending ra, dec to telescope
-        	//moveTeleScopeR(ra, dec);
+        	moveTeleScopeR(ra, dec);
         }
 		return false;
     }
@@ -438,14 +457,11 @@ public class BrightStar extends Activity implements SensorListener{
     				mZoomVisible = true;
     				mZoom.setVisibility(View.VISIBLE);
     			}
-    			//System.out.println("upX:"+upX+" upY:"+upY);
     			//is windows Y coordinate ?
     			brightStarRenderer.selectObject(upX, brightStarRenderer.width - upY);
     			//try to catch touch alt and azi
     			float winX = upX - brightStarRenderer.width/2f;
     			float winY = -upY + brightStarRenderer.height/2f;
-    			//System.out.println("winX:"+winX+" winY"+winY);
-    			//System.out.println("fovy:"+brightStarRenderer.fovy);
     			double azi = CoordCal.cvWinXYtoAzi(-winX, winY, Math.toRadians(brightStarRenderer.lookupdown)
     											, Math.toRadians(brightStarRenderer.yrot), Math.toRadians(brightStarRenderer.fovy)
     											, brightStarRenderer.height, brightStarRenderer.width);
@@ -453,23 +469,28 @@ public class BrightStar extends Activity implements SensorListener{
     											, Math.toRadians(brightStarRenderer.fovy)
     											, brightStarRenderer.height, brightStarRenderer.width);
     			
+    			//azi = 2*Math.PI - azi;
     			double dec = CoordCal.cvAAtoDec(alt, azi);
     			double ra = CoordCal.cvAAtoRA(alt, azi, dec, brightStarRenderer.t1.getLSTr());
-    			//this.ra = (float) ra;
-    			//this.dec = (float) dec;
-    			float touchX = (float) CoordCal.cvRDtoX(ra, dec);
-    			float touchY = (float) CoordCal.cvRDtoY(ra, dec);
-    			float touchZ = (float) CoordCal.cvRDtoZ(dec);
-    			//
-    			double dec1 = CoordCal.cvAAtoDec(alt, 360.0-azi);
-    			double ra1 = CoordCal.cvAAtoRA(alt, 360.0-azi, dec1, brightStarRenderer.t1.getLSTr());
-    			while(ra1 > 2*Math.PI)
+    			selectNearestStar(ra,dec);
+    			//this.ra = ra;
+    			//this.dec = dec;
+    			float touchX = (float) CoordCal.cvRDtoX(this.ra, this.dec);
+    			float touchY = (float) CoordCal.cvRDtoY(this.ra, this.dec);
+    			float touchZ = (float) CoordCal.cvRDtoZ(this.dec);
+    			//for display only
+    			double dec1 = CoordCal.cvAAtoDec(alt, 2*Math.PI-azi);
+    			double ra1 = CoordCal.cvAAtoRA(alt, 2*Math.PI-azi, dec1, brightStarRenderer.t1.getLSTr());
+    			while(ra1 >= 2*Math.PI)
     				ra1 -= 2*Math.PI;
-    			this.ra = (float) ra1;
-    			this.dec = (float) dec1;
+    			float zzz = (float) Math.toDegrees(2*Math.PI-azi);
+    			while(zzz > 360f)
+    				zzz -= 360f;
+    			pointAlt.setText((String) this.getResources().getText(R.string.point_alt)+Double.toString(round(Math.toDegrees(alt))));
+    			pointAz.setText((String) this.getResources().getText(R.string.point_az)+Double.toString(round(zzz)));
     			brightStarRenderer.createCrossLine(touchX, touchY, touchZ);
     			brightStarRenderer.mCross = true;
-    			//System.out.println("azi:"+Math.toDegrees(azi)+" alt:"+Math.toDegrees(alt));
+    			System.out.println("alt:"+Math.toDegrees(alt)+" azi:"+Math.toDegrees(azi));
     		}
     	}
     
@@ -504,8 +525,8 @@ public class BrightStar extends Activity implements SensorListener{
 					brightStarRenderer.eyeUpCal();
 					
 					//set new altitude and azimuth text
-					altitude.setText("altitude:"+Float.toString(brightStarRenderer.lookupdown));
-			        azimuth.setText("azimuth:"+Float.toString(brightStarRenderer.azimuth));
+					altitude.setText((String) this.getResources().getText(R.string.altitude)+Double.toString(round(brightStarRenderer.lookupdown)));
+			        azimuth.setText((String) this.getResources().getText(R.string.azimuth)+Double.toString(round(brightStarRenderer.azimuth)));
 				}
 			}
 		}
@@ -554,13 +575,13 @@ public class BrightStar extends Activity implements SensorListener{
 	            	brightStarRenderer.lookupdown = -orientaton[1]-90f;
 	            	if(brightStarRenderer.lookupdown >= 90.0f)
 						brightStarRenderer.lookupdown = 89.9f;
-					else if(brightStarRenderer.lookupdown < 0.0f)
-						brightStarRenderer.lookupdown = 0f;
+					else if(brightStarRenderer.lookupdown <= -90f)
+						brightStarRenderer.lookupdown = -89f;
 	            	
 	            	brightStarRenderer.eyeCenterCal();
 					brightStarRenderer.eyeUpCal();
-	            	azimuth.setText("azimuth:"+Float.toString(brightStarRenderer.azimuth));
-	            	altitude.setText("altitude:"+Float.toString(brightStarRenderer.lookupdown));
+					altitude.setText((String) this.getResources().getText(R.string.altitude)+Double.toString(round(brightStarRenderer.lookupdown)));
+	            	azimuth.setText((String) this.getResources().getText(R.string.azimuth)+Double.toString(round(brightStarRenderer.azimuth)));
 	            }
         	}
         	
@@ -612,56 +633,26 @@ public class BrightStar extends Activity implements SensorListener{
     	}
     };
 
-////////////////////////////////////////////////////////////////////////
-	/**
-	 * Check for the DPad presses left, right, up and down.
-	 * Walk in the according direction or rotate the "head".
-	 * 
-	 * @param keyCode - The key code
-	 * @param event - The key event
-	 * @return If the event has been handled
-	 */
-    /*
-	public boolean onKeyDown(int keyCode, KeyEvent event) {
-		//
-		System.out.println("KeyPress");
-		
-		if(keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
-			brightStarRenderer.heading += 1.0f;	
-			brightStarRenderer.yrot = brightStarRenderer.heading;					//Rotate The Scene To The Left
-			System.out.println("LEFT!");
-			
-		} else if(keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
-			brightStarRenderer.heading -= 1.0f;
-			brightStarRenderer.yrot = brightStarRenderer.heading;					//Rotate The Scene To The Right
-			
-		} else if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
-			brightStarRenderer.xpos -= (float)Math.sin(brightStarRenderer.heading * brightStarRenderer.piover180) * 0.05f;	//Move On The X-Plane Based On Player Direction
-			brightStarRenderer.zpos -= (float)Math.cos(brightStarRenderer.heading * brightStarRenderer.piover180) * 0.05f;	//Move On The Z-Plane Based On Player Direction
-			
-			if(brightStarRenderer.walkbiasangle >= 359.0f) {							//Is walkbiasangle>=359?
-				brightStarRenderer.walkbiasangle = 0.0f;								//Make walkbiasangle Equal 0
-			} else {
-				brightStarRenderer.walkbiasangle += 10;								//If walkbiasangle < 359 Increase It By 10
-			}
-			brightStarRenderer.walkbias = (float)Math.sin(brightStarRenderer.walkbiasangle * brightStarRenderer.piover180) / 20.0f;	//Causes The Player To Bounce
-	
-		} else if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
-			brightStarRenderer.xpos += (float)Math.sin(brightStarRenderer.heading * brightStarRenderer.piover180) * 0.05f;	//Move On The X-Plane Based On Player Direction
-			brightStarRenderer.zpos += (float)Math.cos(brightStarRenderer.heading * brightStarRenderer.piover180) * 0.05f;	//Move On The Z-Plane Based On Player Direction
-			
-			if(brightStarRenderer.walkbiasangle <= 1.0f) {								//Is walkbiasangle<=1?
-				brightStarRenderer.walkbiasangle = 359.0f;								//Make walkbiasangle Equal 359
-			} else {
-				brightStarRenderer.walkbiasangle -= 10;								//If walkbiasangle > 1 Decrease It By 10
-			}
-			brightStarRenderer.walkbias = (float)Math.sin(brightStarRenderer.walkbiasangle * brightStarRenderer.piover180) / 20.0f;	//Causes The Player To Bounce
-		}else
-			return false;
-	
-		//We handled the event
-		return true;
-	}
-	*/
+    public void selectNearestStar(double ra, double dec)
+    {
+    	double dRa;
+    	double dDec;
+    	double dSum = 20000.0;
+    	int NearestStar = 0;
+    	for(int i=0;i < brightStarRenderer.nrOfStarObjects;i++){
+    		dRa = Math.pow(ra  - brightStarRenderer.reader.getSAO(i).getRa(), 2.0);
+    		dDec = Math.pow(dec - brightStarRenderer.reader.getSAO(i).getDec(), 2.0);
+    		if(dSum > (dRa+dDec)){
+    			dSum = dRa+dDec;
+    			NearestStar = i;
+    		}
+    	}
+    	this.ra =  brightStarRenderer.reader.getSAO(NearestStar).getRa();
+    	this.dec = brightStarRenderer.reader.getSAO(NearestStar).getDec();
+    }
+    
+    public double round(double value){
+    	return Math.round(value*100)/100.0;
+    }
 
 }
