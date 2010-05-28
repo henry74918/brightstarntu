@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="hello">Hello World</string>
     <string name="app_name">BrightStar</string>
+    <string name="menu_1">AltAz Grid SW</string>
+    <string name="menu_2">RaDec Grid SW</string>
+    <string name="menu_3">Meridian SW</string>
+    <string name="menu_4">View Mode</string>
+    <string name="menu_5">Constellation</string>
+    <string name="menu_6">GOTO</string>
+    <string name="julian_day">Julian Day:</string>
+    <string name="altitude">Altitude:</string>
+    <string name="azimuth">Azimuth:</string>
+    <string name="point_az">Point Az:</string>
+    <string name="point_alt">Point Alt:</string>
+    <string name="none">None</string>
 </resources>
