@@ -13,4 +13,8 @@
     <string name="point_az">Point Az:</string>
     <string name="point_alt">Point Alt:</string>
     <string name="none">None</string>
+    <string name="set_loc">Location Set.</string>
+    <string name="latitude">Latitude:</string>
+    <string name="longigude">Longigude:</string>
+    
 </resources>
