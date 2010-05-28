@@ -31,7 +31,7 @@ public class SAORead {
 	public void read(){
 		DataInputStream dis = new DataInputStream(this.context.getResources().openRawResource(R.raw.saora_429_less4));
 		try { 
-			System.out.println( "file: SAOra_100"); 
+			//System.out.println( "file: SAOra_100"); 
 			int i, starID;
 			short magnitude; 
 			double ra,dec;
