@@ -118,8 +118,10 @@ public class CoordCal{
 	 */
 	public static double cvAAtoRA(double alt_r, double azi_r, double dec_r, double lst_r){
 		double ha_r = cvAAtoHA(alt_r, azi_r, dec_r);
-		//System.out.println("ha_r:"+ha_r);
-		return ha_r + lst_r;
+		double ra_r = ha_r + lst_r;
+		while(ra_r > 2*Math.PI)
+			ra_r -= 2*Math.PI;
+		return ra_r;
 	}
 	
 	/**
