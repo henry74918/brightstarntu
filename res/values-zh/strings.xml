@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="menu_1">仰角方位角</string>
+    <string name="menu_2">赤經赤緯</string>
+    <string name="menu_3">子午線</string>
+    <string name="menu_4">操作模式</string>
+    <string name="menu_5">星座</string>
+    <string name="menu_6">指揮望遠鏡</string>
+	<string name="julian_day">儒略日:</string>
+    <string name="altitude">仰角:</string>
+    <string name="azimuth">方位角:</string>
+    <string name="point_az">點選方位角:</string>
+    <string name="point_alt">點選仰角:</string>
+    <string name="none">無</string>
+</resources>
