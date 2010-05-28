@@ -26,7 +26,7 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 	/** Is blending enabled */
 	private boolean blend = true;
 	/** Is twinkle enabled */
-	private boolean twinkle = false;
+	//private boolean twinkle = false;
 	
 	int nrOfSolarObjects;
 	int nrOfStarObjects;
@@ -52,9 +52,10 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 	protected float oldX;
 	protected float oldY;
 	protected TimeCal t1;
-	protected boolean mGridVisible = false;
+	protected SAORead reader;
+	protected boolean mGridVisible = true;
 	protected boolean mGridRDVisible = false;
-	protected boolean mMeridianVisible = false;
+	protected boolean mMeridianVisible = true;
 	protected boolean mCross = false;
 	protected boolean mConstellationVisible = true;
 	
@@ -71,9 +72,7 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 	private float textureScale = 2.0f;				//scale of the texture size
 	private float centerX, centerY, centerZ;
 	private float upX, upY, upZ;
-	private float touchX, touchY, touchZ;
 	
-	private SAORead reader;
 	//private Stars stars;
 	private MatrixGrabber mGrabber;
 	//private TextView julianDay;
@@ -208,10 +207,10 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 		}
 		
 		//
-		float xtrans = -xpos;						//Used For Player Translation On The X Axis
-		float ztrans = -zpos;						//Used For Player Translation On The Z Axis
-		float ytrans = -walkbias - 0.25f;			//Used For Bouncing Motion Up And Down
-		float sceneroty = 360.0f - yrot;			//360 Degree Angle For Player Direction
+		//float xtrans = -xpos;						//Used For Player Translation On The X Axis
+		//float ztrans = -zpos;						//Used For Player Translation On The Z Axis
+		//float ytrans = -walkbias - 0.25f;			//Used For Bouncing Motion Up And Down
+		//float sceneroty = 360.0f - yrot;			//360 Degree Angle For Player Direction
 		
 		//View
 		//gl.glRotatef(-lookupdown, 1.0f, 0, 0);		//Rotate Up And Down To Look Up And Down
@@ -306,7 +305,7 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 			gl.glEnable(GL10.GL_TEXTURE_2D);
 		}
 /*for test*/		
-
+/*
         for (int i=0; i< nrOfSolarObjects; i++){
         	if (solar_sim){
                 gl.glDisable(GL10.GL_TEXTURE_2D);
@@ -321,7 +320,7 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
                 gl.glTexImage2D(GL10.GL_TEXTURE_2D, 0, GL10.GL_RGBA, 922, 461, 0, GL10.GL_RGBA, GL10.GL_UNSIGNED_BYTE, fb);
         	}
         }
-
+*/
 		gl.glEnable(GL10.GL_TEXTURE_2D);
 
 		gl.glBindTexture(GL10.GL_TEXTURE_2D, textures[0]);
@@ -371,6 +370,7 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 		gl.glViewport(0, 0, width, height); 	//Reset The Current Viewport
 		gl.glMatrixMode(GL10.GL_PROJECTION); 	//Select The Projection Matrix
 		gl.glLoadIdentity(); 					//Reset The Projection Matrix
+		gl.glLineWidth(2.0f);					//Set OpenGL linewidth
 
 		//Calculate The Aspect Ratio Of The Window
 		GLU.gluPerspective(gl, fovy, (float)width / (float)height, 0.1f, 100.0f);
@@ -904,20 +904,25 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 		centerX = (float) CoordCal.cvRDtoX(cenRa, cenDec);
 		centerY = (float) CoordCal.cvRDtoY(cenRa, cenDec);
 		centerZ = (float) CoordCal.cvRDtoZ(cenDec);
-		//System.out.println("cX:"+centerX+" cY:"+centerY+" cZ:"+centerZ);
 	}
 	
 	public void eyeUpCal(){
 		
 		float upAlt;
+		float upAzi;
+		//System.out.println("yrot:"+yrot);
 		if(lookupdown >= 0)
 			upAlt = 90f - lookupdown;
 		else
 			upAlt = 90f + lookupdown;
 		
-		float upAzi = yrot + 180;
-			if (upAzi >= 360f)
-				upAzi -= 360f;
+		if(lookupdown >= 0)
+			upAzi = yrot + 180;
+		else
+			upAzi = yrot;
+			
+		while (upAzi >= 360f)
+			upAzi -= 360f;
 		
 		//System.out.println("upAlt:"+upAlt);
 		double upAltitude = Math.toRadians(upAlt);
@@ -934,7 +939,6 @@ public class BrightStarRenderer extends GLSurfaceView implements Renderer {
 		upX = (float) CoordCal.cvRDtoX(upRa, upDec);
 		upY = (float) CoordCal.cvRDtoY(upRa, upDec);
 		upZ = (float) CoordCal.cvRDtoZ(upDec);
-		//System.out.println("uX:"+upX+" uY:"+upY+" uZ:"+upZ);
 	}
 	
 	public void selectObject(float winX, float winY){
