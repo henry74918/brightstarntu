@@ -18,7 +18,7 @@ public class TimeCal{
 	//private static final double pi = 3.1416;
 
 	public double getJD(){
-		return JD;
+		return round(JD);
 	}
 	
 	public double geth(){
@@ -130,5 +130,9 @@ public class TimeCal{
 			i += 24;
 		}
 		return i;
+	}
+	
+	private double round(double value){
+		return Math.round(value*100)/100.0;
 	}
 }
