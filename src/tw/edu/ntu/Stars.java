@@ -19,7 +19,7 @@ public class Stars {
 	
 	private int num;					//Basic number of stars	
 	private Star[] stars;					//Hold all our star instances in this array
-	private float zoom = -15.0f;
+	//private float zoom = -15.0f;
 	
 	/** Our texture pointer */
 	private int[] textures = new int[1];
