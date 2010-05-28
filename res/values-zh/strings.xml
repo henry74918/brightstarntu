@@ -12,4 +12,7 @@
     <string name="point_az">點選方位角:</string>
     <string name="point_alt">點選仰角:</string>
     <string name="none">無</string>
+    <string name="set_loc">地點設置為:</string>
+    <string name="latitude">緯度:</string>
+    <string name="longigude">經度:</string>
 </resources>
